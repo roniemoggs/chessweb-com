@@ -1,0 +1,39 @@
+---
+import { languages, type SupportedLanguage } from '../i18n/ui';
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+const currentLang = getLangFromUrl(Astro.url);
+
+const labels: Record<SupportedLanguage, { flag: string; name: string }> = {
+  ja: { flag: '🇯🇵', name: '日本語' },
+  en: { flag: '🇺🇸', name: 'English' },
+};
+---
+
+<div class={`inline-flex items-center gap-1 p-0.5 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] shadow-2xs select-none ${className}`}>
+  {Object.entries(languages).map(([langKey]) => {
+    const l = langKey as SupportedLanguage;
+    const isActive = l === currentLang;
+    const targetUrl = l === 'ja' ? '/' : '/en/';
+
+    return (
+      <a
+        href={targetUrl}
+        class={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+          isActive
+            ? 'bg-[#171717] dark:bg-white text-white dark:text-[#171717] shadow-xs'
+            : 'text-[#4d4d4d] dark:text-[#a1a1aa] hover:text-[#171717] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+        }`}
+        title={labels[l].name}
+      >
+        <span>{labels[l].flag}</span>
+        <span class="text-[11px]">{labels[l].name}</span>
+      </a>
+    );
+  })}
+</div>

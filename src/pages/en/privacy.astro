@@ -1,0 +1,193 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations, useTranslatedPath } from '../../i18n/utils';
+
+const t = useTranslations('en');
+const translatePath = useTranslatedPath('en');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  'name': 'Privacy Policy | Data Protection & Local Storage | Chess Web',
+  'description': 'Understand how Chess Web respects your privacy, why we require no registration, and how client-side local storage and Stockfish WASM protect your data.',
+  'inLanguage': 'en',
+  'url': 'https://チェスweb.com/en/privacy',
+};
+---
+
+<Layout
+  lang="en"
+  title={t('privacy.metaTitle')}
+  description={t('privacy.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-12">
+    <!-- Header -->
+    <header class="text-center max-w-2xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span>PRIVACY & DATA PROTECTION</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        Privacy Policy<br />
+        <span class="text-base sm:text-lg font-normal text-[#8f8f8f] dark:text-[#71717a] block mt-2">
+          Transparent, Client-First Architecture
+        </span>
+      </h1>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#71717a] font-mono">
+        Effective Date: October 14, 2026 ｜ Last Revised: October 14, 2026
+      </p>
+    </header>
+
+    <!-- Content Sections Card -->
+    <article class="p-6 sm:p-10 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-10 text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+      <!-- Section 1 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>1. Core Philosophy & Scope</span>
+        </h2>
+        <p>
+          At Chess Web (https://チェスweb.com, referred to as "we", "our", or "the Platform"), we believe that playing chess on the internet should be simple, enjoyable, and completely private. We adhere to global data protection standards including the GDPR and Japan’s Act on the Protection of Personal Information (APPI).
+        </p>
+        <p>
+          Chess Web is engineered to require <strong>no account creation, registration, or password setup</strong>. You do not need to provide your real name, physical address, or phone number to access our games.
+        </p>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>2. Data Handling & Client-Side Storage</span>
+        </h2>
+        <p>Here is an exact breakdown of what data exists and where it is stored:</p>
+
+        <div class="space-y-4 pt-2">
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (A) Browser Local Storage (Device-Only)
+            </h3>
+            <p>
+              To remember your personal interface preferences between visits, we save non-identifiable settings in your browser's local storage:
+            </p>
+            <ul class="list-disc list-inside space-y-1 pl-2 text-[11px] sm:text-xs">
+              <li>Board visual theme and piece sets</li>
+              <li>Sound effect volume and audio toggles</li>
+              <li>Preferred AI level (1 to 9) and match timer duration</li>
+              <li>Dark mode / light mode appearance preference</li>
+            </ul>
+            <p class="text-[11px] text-[#8f8f8f] dark:text-[#71717a]">
+              These preferences reside solely inside your browser and are never transmitted to or stored on our servers.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (B) Client-Side Stockfish Execution (WebAssembly)
+            </h3>
+            <p>
+              When you play against our computer opponent or request move hints, the Stockfish chess engine runs locally inside your browser via WebAssembly (WASM). Your moves, tactical evaluations, and thinking times never leave your computer or phone.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (C) Online P2P Play Sessions
+            </h3>
+            <p>
+              When you play with friends online using room codes, moves are synchronized directly via Peer-to-Peer (WebRTC) protocols with fallback signaling. Once the room closes, session channels are terminated, and no long-term match records are retained.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (D) Contact Form Submissions
+            </h3>
+            <p>
+              If you contact us via our contact form or support email, we collect your name, email address, and message text exclusively to answer your inquiry. We never sell, rent, or distribute this correspondence to marketers.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>3. Cookies & Server Telemetry</span>
+        </h2>
+        <p>
+          We maintain standard HTTP web server logs (including timestamp, IP address, request URL, and browser User-Agent) solely for operational reliability, DDoS prevention, and security audits.
+        </p>
+        <p>
+          You may configure your browser to block cookies. Since Chess Web relies primarily on Local Storage for preferences rather than session cookies, blocking cookies will not hinder normal gameplay.
+        </p>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>4. Third-Party Sharing</span>
+        </h2>
+        <p>
+          We do not sell, trade, or transfer any user data to outside parties, except where required by law (such as formal law enforcement court orders).
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>5. Security & Encryption</span>
+        </h2>
+        <p>
+          All connections to Chess Web are strictly encrypted using TLS 1.3/HTTPS, ensuring data in transit is protected against eavesdropping or unauthorized interception.
+        </p>
+      </section>
+
+      <!-- Section 6 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>6. Your Rights & Data Deletion</span>
+        </h2>
+        <p>
+          Because all preference data is held locally on your device, you have complete sovereignty over your information. Clearing your browser cache or site data for this domain permanently erases all saved preferences.
+        </p>
+      </section>
+
+      <!-- Section 7 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>7. Policy Updates</span>
+        </h2>
+        <p>
+          We may update this policy periodically to reflect platform enhancements or legal changes. Any modifications will be reflected with a revised "Effective Date" at the top of this page.
+        </p>
+      </section>
+
+      <!-- Section 8 -->
+      <section class="space-y-3 pt-2 border-t border-[#ebebeb] dark:border-[#27272a]">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>8. Contact Us</span>
+        </h2>
+        <p>
+          If you have questions regarding this Privacy Policy or our security practices, feel free to contact us:
+        </p>
+        <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1 text-xs">
+          <p class="font-bold text-[#171717] dark:text-white">Chess Web Privacy Team</p>
+          <p>
+            Email: <a href="mailto:support@チェスweb.com" class="text-amber-600 dark:text-amber-400 underline font-mono">support@チェスweb.com</a>
+          </p>
+          <p>
+            Online Form: <a href={translatePath('/contact')} class="text-amber-600 dark:text-amber-400 underline">Open Contact Page</a>
+          </p>
+        </div>
+      </section>
+    </article>
+  </div>
+</Layout>

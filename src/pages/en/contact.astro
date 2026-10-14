@@ -1,0 +1,75 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations } from '../../i18n/utils';
+
+const t = useTranslations('en');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  'name': 'Contact | Chess Web',
+  'description': 'Bug reports, feature requests, engine suggestions, and general feedback are all welcome — get in touch with Chess Web.',
+  'inLanguage': 'en',
+  'url': 'https://チェスweb.com/en/contact',
+};
+---
+
+<Layout
+  lang="en"
+  title={t('contact.metaTitle')}
+  description={t('contact.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-3xl mx-auto px-6 sm:px-8 py-24 sm:py-32 space-y-8">
+    <!-- Title -->
+    <h1 class="text-4xl sm:text-5xl font-bold text-[#171717] dark:text-white tracking-tight">
+      Contact
+    </h1>
+
+    <!-- Description -->
+    <p class="text-base sm:text-lg text-[#666666] dark:text-[#a1a1aa] leading-relaxed max-w-2xl">
+      Corrections, rule questions, feature requests and bug reports are all welcome — reports of positions or moves it consistently gets wrong are the most useful thing you can send.
+    </p>
+
+    <!-- Email Box -->
+    <div class="w-full p-5 sm:p-6 rounded-2xl bg-[#f4f4f5] dark:bg-[#111113] border border-[#e4e4e7] dark:border-[#222226] flex items-center justify-between gap-4 transition-colors">
+      <div class="flex items-center gap-2 text-sm sm:text-base font-mono">
+        <span class="text-[#71717a] dark:text-[#a1a1aa]">Email:</span>
+        <a
+          href="mailto:support@チェスweb.com"
+          id="email-text"
+          class="text-[#171717] dark:text-white hover:underline focus:outline-none"
+        >
+          support@チェスweb.com
+        </a>
+      </div>
+
+      <button
+        id="copy-btn"
+        type="button"
+        class="text-xs font-mono text-[#71717a] dark:text-[#a1a1aa] hover:text-[#171717] dark:hover:text-white px-3 py-1.5 rounded-lg border border-[#e4e4e7] dark:border-[#27272a] bg-white dark:bg-[#1a1a1e] transition-colors cursor-pointer select-none active:scale-95"
+      >
+        Copy
+      </button>
+    </div>
+
+    <!-- Footnote -->
+    <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#71717a]">
+      We read every message and typically reply within 24–48 hours.
+    </p>
+  </div>
+
+  <script is:inline>
+    const btn = document.getElementById('copy-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText('support@チェスweb.com').then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+          }, 2000);
+        });
+      });
+    }
+  </script>
+</Layout>

@@ -1,0 +1,45 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { LearnHub } from '../../components/chess/LearnHub';
+import { useTranslations, useTranslatedPath } from '../../i18n/utils';
+
+const t = useTranslations('en');
+const translatePath = useTranslatedPath('en');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'LearningResource',
+  'name': 'Learn Chess: Interactive Rules & Beginner Guide',
+  'description': 'Learn how to play chess step-by-step. Interactive boards to try every move, guide to all 6 pieces, special rules (castling, en passant, promotion), checkmate vs stalemate, and beginner quiz.',
+  'learningResourceType': 'Guide',
+  'educationalLevel': 'Beginner',
+  'inLanguage': 'en',
+};
+---
+
+<Layout
+  lang="en"
+  title={t('learn.metaTitle')}
+  description={t('learn.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12">
+    <!-- Hero / Header -->
+    <header class="text-center max-w-3xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <span>BEGINNER TUTORIAL • ZERO EXPERIENCE NEEDED</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        Master Chess in Minutes:<br class="hidden sm:block" />
+        <span class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent">Interactive Beginner Guide</span>
+      </h1>
+      <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
+        Never touched a chess piece before? No problem! Learn how the board is set up, how every piece moves, special tricks like castling and en passant, how to win with checkmate, and test yourself with our quick quiz.
+      </p>
+    </header>
+
+    <!-- Comprehensive Interactive Learning Hub -->
+    <LearnHub client:load lang="en" />
+  </div>
+</Layout>

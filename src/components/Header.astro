@@ -1,0 +1,112 @@
+---
+import LanguagePicker from './LanguagePicker.astro';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '../i18n/utils';
+import type { SupportedLanguage } from '../i18n/ui';
+
+interface Props {
+  lang?: SupportedLanguage;
+}
+
+const currentLang = Astro.props.lang || getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+const translatePath = useTranslatedPath(currentLang);
+
+const homeUrl = translatePath('/');
+const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '/en' || Astro.url.pathname === '/en/';
+const learnHref = translatePath('/learn');
+const isLearn = Astro.url.pathname.includes('/learn') || Astro.url.pathname.includes('/rules');
+const piecesHref = `${learnHref}#pieces`;
+const faqHref = isHome ? '#faq' : `${homeUrl}#faq`;
+---
+
+<header class="w-full bg-[#fafafa]/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-[#ebebeb] dark:border-[#27272a] sticky top-0 z-40 select-none transition-colors">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+    <!-- Brand Logo -->
+    <a href={homeUrl} class="flex items-center gap-2.5 group shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-[#171717] dark:bg-white text-white dark:text-[#171717] flex items-center justify-center font-serif text-xl font-bold shadow-xs group-hover:scale-105 transition-transform">
+        ♚
+      </div>
+      <div class="flex flex-col">
+        <span class="font-bold text-base sm:text-lg text-[#171717] dark:text-white tracking-tight leading-tight flex items-center gap-1.5">
+          {t('site.brand')}
+          <span class="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">
+            {t('site.domain')}
+          </span>
+        </span>
+        <span class="text-[10px] text-[#8f8f8f] dark:text-[#71717a] font-normal leading-tight hidden sm:block">
+          {t('site.subBrand')}
+        </span>
+      </div>
+    </a>
+
+    <!-- Nav Links, Language Picker & CTA -->
+    <nav class="flex items-center gap-2 sm:gap-3 text-xs font-medium text-[#4d4d4d] dark:text-[#a1a1aa]">
+      <a href={translatePath('/online')} class="hover:text-[#171717] dark:hover:text-white transition-colors py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-semibold text-[#171717] dark:text-white inline-flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>{t('nav.online')}</span>
+      </a>
+      <a
+        href={learnHref}
+        class={`hover:text-[#171717] dark:hover:text-white transition-colors py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-semibold inline-flex items-center gap-1 ${
+          isLearn ? 'text-[#171717] dark:text-white bg-black/5 dark:bg-white/5' : ''
+        }`}
+      >
+        <span>📖</span>
+        <span>{t('nav.learn')}</span>
+      </a>
+      <a href={piecesHref} class="hover:text-[#171717] dark:hover:text-white transition-colors py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 hidden lg:inline-block">
+        {t('nav.pieces')}
+      </a>
+      <a href={faqHref} class="hover:text-[#171717] dark:hover:text-white transition-colors py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 hidden md:inline-block">
+        {t('nav.faq')}
+      </a>
+
+      <!-- Language Switcher -->
+      <LanguagePicker />
+
+      <!-- Dark / Light Theme Toggle Button -->
+      <button
+        id="theme-toggle"
+        type="button"
+        title="Theme Toggle"
+        class="p-2 rounded-full border bg-white dark:bg-[#18181b] hover:bg-[#f2f2f2] dark:hover:bg-[#27272a] text-[#171717] dark:text-[#ededed] border-[#ebebeb] dark:border-[#27272a] shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+      >
+        <svg id="theme-toggle-sun" class="w-4 h-4 hidden dark:block text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2"></path>
+          <path d="M12 20v2"></path>
+          <path d="m4.93 4.93 1.41 1.41"></path>
+          <path d="m17.66 17.66 1.41 1.41"></path>
+          <path d="M2 12h2"></path>
+          <path d="M20 12h2"></path>
+          <path d="m6.34 17.66-1.41 1.41"></path>
+          <path d="m19.07 4.93-1.41 1.41"></path>
+        </svg>
+        <svg id="theme-toggle-moon" class="w-4 h-4 block dark:hidden text-[#4d4d4d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+        </svg>
+      </button>
+
+      <!-- Play CTA -->
+      <a
+        href="#game-board"
+        class="py-2 px-3 sm:px-4 rounded-full bg-[#171717] hover:bg-[#333333] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#171717] text-xs font-semibold shadow-xs transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+      >
+        <span>{t('nav.play')}</span>
+        <span class="text-[10px]">▶</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<script is:inline>
+  const toggleBtn = document.getElementById('theme-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      try {
+        localStorage.setItem('chess_theme_mode', isDark ? 'dark' : 'light');
+      } catch (e) {}
+    });
+  }
+</script>

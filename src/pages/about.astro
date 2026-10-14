@@ -1,0 +1,231 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { useTranslations, useTranslatedPath } from '../i18n/utils';
+
+const t = useTranslations('ja');
+const translatePath = useTranslatedPath('ja');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  'name': 'チェスwebについて | 運営理念・開発ストーリー・技術スタック',
+  'description': '完全無料・登録不要のブラウザチェス「チェスweb」の運営理念、開発ストーリー、使用技術（Stockfish 16+ WASM）、チェス普及への想いをご紹介します。',
+  'inLanguage': 'ja',
+  'mainEntity': {
+    '@type': 'Organization',
+    'name': 'チェスweb.com',
+    'url': 'https://チェスweb.com',
+    'logo': 'https://チェスweb.com/favicon.svg',
+  },
+};
+---
+
+<Layout
+  lang="ja"
+  title={t('about.metaTitle')}
+  description={t('about.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-16">
+    <!-- Hero Header -->
+    <header class="text-center space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <span>OUR MISSION & TECHNOLOGY</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        誰もが気軽に楽しめる<br class="hidden sm:block" />
+        <span class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent">最高の無料チェス体験を</span>
+      </h1>
+      <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
+        「チェスweb（チェスweb.com）」は、アプリのインストールや面倒な会員登録なしで、ブラウザを開いた瞬間から本格的な対局を楽しめる日本向け無料チェスプラットフォームです。
+      </p>
+    </header>
+
+    <!-- Core Values Cards Grid -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>私たちが大切にしている4つの原則</span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Card 1 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold">
+            ⚡
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            登録不要・ゼロフリクション
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            アカウント登録、パスワード設定、煩わしい確認メールは一切不要。PC、タブレット、スマートフォンを問わず、サイトを開くだけで即座に対戦が始まります。
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
+            🧠
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            世界最高峰 Stockfish 搭載
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            世界最強チェスエンジン「Stockfish」をWebAssemblyでブラウザ内に直接実装。通信の遅延なく、超初心者からグランドマスター級まで9段階の絶妙な強さで対戦できます。
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+            🌱
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            初心者にやさしい学習機能
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            形勢が一目でわかる「評価値バー」、迷ったときの「最善手ヒント」、手筋の確認ができる「待った機能」、動かして学べるインタラクティブルール解説を完備しています。
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">
+            🔒
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            プライバシー・ファースト設計
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            AI対局の思考処理はすべてお使いの端末（ブラウザ）上で安全に完結。個人情報の収集や広告トラッカーの過剰な埋め込みを行わず、クリーンな対局環境を守ります。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technology Stack Section -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>採用している技術スタック</span>
+      </h2>
+      <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-6">
+        <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+          チェスwebは、モダンなWeb標準技術を駆使して圧倒的な軽量性と高速性を両立しています。
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Stockfish 16+ (WASM)</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">WebAssemblyとWeb Workersを活用し、ブラウザのバックグラウンドスレッドで盤面を高速解析。</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Astro 7 & React 19</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">アイランドアーキテクチャによりHTMLを極小化し、ミリ秒単位の爆速ページロードを実現。</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Tailwind CSS v4</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">最新のCSSエンジンによるダークモード完全対応と、洗練されたGeistデザインシステム。</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">P2P WebRTC / PeerJS</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">中継サーバーを最小限に抑え、プレイヤー間でダイレクトに手を同期する低遅延オンライン対局。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Open Source Acknowledgement -->
+    <section class="p-6 sm:p-8 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+      <h3 class="text-base font-bold text-[#171717] dark:text-white flex items-center gap-2">
+        <span>🤝</span>
+        <span>オープンソースコミュニティへの謝辞</span>
+      </h3>
+      <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+        チェスwebのAI対局エンジンは、世界中の開発者によって保守されているオープンソースプロジェクト「Stockfish」（GNU General Public License v3）の成果に基づいています。また、chess.jsをはじめとする素晴らしいオープンソースライブラリに心より感謝申し上げます。
+      </p>
+    </section>
+
+    <!-- Organization Profile Table -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>サービス運営概要</span>
+      </h2>
+
+      <div class="rounded-2xl border border-[#ebebeb] dark:border-[#27272a] overflow-hidden bg-white dark:bg-[#121214]">
+        <table class="w-full text-left text-xs sm:text-sm">
+          <tbody class="divide-y divide-[#ebebeb] dark:divide-[#27272a]">
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b] w-1/3">
+                サービス名称
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                チェスweb（チェス web 無料ゲーム）
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                運営組織
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                チェスweb 開発運営プロジェクト
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                公式サイトURL
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 font-mono text-[#4d4d4d] dark:text-[#a1a1aa]">
+                https://チェスweb.com
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                事業内容
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                オンラインチェス対局環境の提供、チェス学習コンテンツの制作・普及活動
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                お問い合わせ
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                <a href={translatePath('/contact')} class="text-amber-600 dark:text-amber-400 underline hover:opacity-80">
+                  お問い合わせ窓口はこちら
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bottom CTA Bar -->
+    <div class="p-8 rounded-2xl bg-gradient-to-br from-[#171717] to-[#27272a] text-white text-center space-y-4 shadow-lg">
+      <h3 class="text-xl sm:text-2xl font-bold tracking-tight">
+        さあ、チェスの世界へ飛び込みましょう！
+      </h3>
+      <p class="text-xs sm:text-sm text-[#a1a1aa] max-w-md mx-auto">
+        駒の動かし方を覚えたばかりの方も、プロレベルのAIに挑みたい方も、いつでも歓迎します。
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <a
+          href={translatePath('/')}
+          class="px-5 py-2.5 rounded-xl bg-white text-[#171717] text-xs font-bold hover:bg-[#ededed] transition-all shadow-xs active:scale-95"
+        >
+          今すぐ対局を始める ▶
+        </a>
+        <a
+          href={translatePath('/learn')}
+          class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all active:scale-95"
+        >
+          ルール学習ガイドを見る 📖
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>

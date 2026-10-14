@@ -1,11 +1,390 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import ChessApp from '../components/chess/ChessApp';
+import ChessSeoArticle from '../components/chess/ChessSeoArticle.astro';
+import ChessFaqSection from '../components/chess/ChessFaqSection.astro';
+import { faqData, getFaqSchemaJsonLd } from '../data/faqData';
+import { useTranslations, useTranslatedPath } from '../i18n/utils';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const t = useTranslations('ja');
+const translatePath = useTranslatedPath('ja');
+
+const faqSchema = getFaqSchemaJsonLd(faqData);
 ---
 
-<Layout>
-	<Welcome />
+<Layout lang="ja" structuredData={faqSchema}>
+  <!-- Hero Section -->
+  <section class="w-full pt-8 pb-4 sm:pt-12 sm:pb-6 px-4 text-center select-none">
+    <div class="max-w-3xl mx-auto space-y-3">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[11px] font-medium text-[#4d4d4d] dark:text-[#a1a1aa] shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>{t('hero.badge')}</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        {t('hero.title')}
+      </h1>
+      <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">
+        {t('hero.subtitle')}
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive Game Area -->
+  <section id="game-board" class="w-full">
+    <ChessApp client:only="react" lang="ja">
+      <!-- Loading Fallback Skeleton -->
+      <div slot="fallback" class="w-full max-w-4xl mx-auto min-h-[560px] bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] rounded-3xl p-8 flex flex-col items-center justify-center space-y-4 my-8 shadow-xs">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-[#171717] dark:text-white shadow-inner">
+          <svg class="animate-spin h-6 w-6 text-[#171717] dark:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+        </div>
+        <div class="text-center space-y-1">
+          <div class="text-sm font-bold text-[#171717] dark:text-white">{t('hero.loadingTitle')}</div>
+          <div class="text-xs text-[#8f8f8f] dark:text-[#71717a] font-mono">{t('hero.loadingSubtitle')}</div>
+        </div>
+      </div>
+    </ChessApp>
+  </section>
+
+  <!-- Feature Cards Grid -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+      <h2 class="text-xl sm:text-3xl font-bold text-[#171717] dark:text-white">
+        {t('features.heading')}
+      </h2>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#a1a1aa]">
+        {t('features.subheading')}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Card 1 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            🤖
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">{t('features.f1.title')}</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('features.f1.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            👥
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">{t('features.f2.title')}</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('features.f2.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            💡
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">{t('features.f3.title')}</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('features.f3.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            🔊
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">{t('features.f4.title')}</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('features.f4.desc')}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comprehensive SEO Guide & Overview (800-1200 words) -->
+  <ChessSeoArticle />
+
+  <!-- Rules Section -->
+  <section id="rules" class="scroll-mt-20 max-w-6xl mx-auto px-4 sm:px-6 py-12 border-t border-[#ebebeb] dark:border-[#27272a]">
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+      <div class="inline-block px-3 py-0.5 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[10px] font-mono text-[#8f8f8f] dark:text-[#a1a1aa]">
+        {t('rules.tag')}
+      </div>
+      <h2 class="text-xl sm:text-3xl font-bold text-[#171717] dark:text-white">
+        {t('rules.heading')}
+      </h2>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#a1a1aa]">
+        {t('rules.subheading')}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <!-- Rule 1: Checkmate -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-xl font-serif text-[#171717] dark:text-white">
+              ♔
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold">
+              {t('rules.r1.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r1.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r1.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rule 2: Castling -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg">
+              🏰
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold">
+              {t('rules.r2.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r2.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r2.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rule 3: En Passant -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-xl font-serif text-[#171717] dark:text-white">
+              ♟
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+              {t('rules.r3.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r3.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r3.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rule 4: Promotion -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-xl font-serif text-[#171717] dark:text-white">
+              ♛
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold">
+              {t('rules.r4.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r4.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r4.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rule 5: Stalemate & Draws -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg">
+              ⚖
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 font-semibold">
+              {t('rules.r5.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r5.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r5.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rule 6: Clock & Flag Fall -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg">
+              ⏱
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold">
+              {t('rules.r6.badge')}
+            </span>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">
+            {t('rules.r6.title')}
+          </h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('rules.r6.desc')}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick action to open interactive piece & rules guide -->
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <a
+        href={translatePath('/learn')}
+        class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-[#171717] dark:bg-white text-white dark:text-[#171717] text-xs sm:text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
+      >
+        <span>♟</span>
+        <span>盤面で駒を動かして学べる学習ページへ →</span>
+      </a>
+      <a
+        href={translatePath('/learn')}
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-[#141416] border border-[#ebebeb] dark:border-[#27272a] text-[#171717] dark:text-white text-xs sm:text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all shadow-xs cursor-pointer"
+      >
+        <span>📖</span>
+        <span>{t('rules.interactiveBtn')}</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Piece Guide Section -->
+  <section id="pieces" class="scroll-mt-20 max-w-6xl mx-auto px-4 sm:px-6 py-12 border-t border-[#ebebeb] dark:border-[#27272a]">
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+      <div class="inline-block px-3 py-0.5 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[10px] font-mono text-[#8f8f8f] dark:text-[#a1a1aa]">
+        {t('pieces.tag')}
+      </div>
+      <h2 class="text-xl sm:text-3xl font-bold text-[#171717] dark:text-white">
+        {t('pieces.heading')}
+      </h2>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#a1a1aa]">
+        {t('pieces.subheading')}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- King -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♔
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.king.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">{t('pieces.king.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.king.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Queen -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♕
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.queen.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400">{t('pieces.queen.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.queen.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Rook -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♖
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.rook.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">{t('pieces.rook.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.rook.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Bishop -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♗
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.bishop.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">{t('pieces.bishop.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.bishop.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Knight -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♘
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.knight.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">{t('pieces.knight.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.knight.desc')}
+          </p>
+        </div>
+      </div>
+
+      <!-- Pawn -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-2xl shrink-0 font-serif text-[#171717] dark:text-white">
+          ♙
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-sm text-[#171717] dark:text-white">{t('pieces.pawn.name')}</h3>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">{t('pieces.pawn.badge')}</span>
+          </div>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            {t('pieces.pawn.desc')}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rules & FAQ Section -->
+  <ChessFaqSection />
 </Layout>

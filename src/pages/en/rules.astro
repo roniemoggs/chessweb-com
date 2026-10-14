@@ -1,0 +1,6 @@
+---
+import { useTranslatedPath } from '../../i18n/utils';
+
+const translatePath = useTranslatedPath('en');
+return Astro.redirect(translatePath('/learn'), 301);
+---

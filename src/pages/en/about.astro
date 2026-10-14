@@ -1,0 +1,231 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations, useTranslatedPath } from '../../i18n/utils';
+
+const t = useTranslations('en');
+const translatePath = useTranslatedPath('en');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  'name': 'About Us | Our Mission, Technology & Architecture | Chess Web',
+  'description': 'Learn about Chess Web: a free, web-native chess platform powered by Stockfish 16+ WASM, dedicated to making chess fast, beautiful, and accessible to everyone.',
+  'inLanguage': 'en',
+  'mainEntity': {
+    '@type': 'Organization',
+    'name': 'チェスweb.com',
+    'url': 'https://チェスweb.com/en/',
+    'logo': 'https://チェスweb.com/favicon.svg',
+  },
+};
+---
+
+<Layout
+  lang="en"
+  title={t('about.metaTitle')}
+  description={t('about.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-16">
+    <!-- Hero Header -->
+    <header class="text-center space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <span>OUR MISSION & ARCHITECTURE</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        High-Performance, Pure Chess<br class="hidden sm:block" />
+        <span class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent">Accessible to Everyone</span>
+      </h1>
+      <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
+        Chess Web is a modern web-native chess platform built to deliver an instant, distraction-free playing experience without accounts, paywalls, or app downloads.
+      </p>
+    </header>
+
+    <!-- Core Values Cards Grid -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>Core Pillars of Chess Web</span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Card 1 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold">
+            ⚡
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            Zero-Friction Access
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            No signup barriers, email confirmations, or logins. Open the browser on any phone, tablet, or PC, and start playing against Stockfish or a friend in seconds.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
+            🧠
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            Stockfish 16+ Engine (WASM)
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            The world’s premier chess engine runs client-side via WebAssembly. Enjoy sub-millisecond move evaluation, 9 tailored AI difficulties, and real-time tactical hints with zero network lag.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+            🌱
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            Comprehensive Beginner Tools
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            A dynamic evaluation bar, move undo support, sound effects, and an interactive learning hub to master piece movements, special moves, checkmates, and tactics step-by-step.
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">
+            🔒
+          </div>
+          <h3 class="text-base font-bold text-[#171717] dark:text-white">
+            Privacy by Design
+          </h3>
+          <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            AI calculations happen 100% on your device. We do not track personal identities, force persistent cookies, or clutter your match with disruptive video advertisements.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technology Stack Section -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>Engineered with Modern Web Standards</span>
+      </h2>
+      <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-6">
+        <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+          Chess Web is engineered from the ground up for maximum responsiveness, lightweight footprint, and crisp typography.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Stockfish 16+ (WASM)</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">Compiled to WebAssembly and executed in background Web Workers for smooth 60fps board rendering.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Astro 7 & React 19</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">Island architecture delivering near-zero JavaScript overhead with instant navigation.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">Tailwind CSS v4</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">Lightning-fast styling engine powering dark & light modes and Geist design tokens.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a]">
+            <span class="font-mono font-bold text-amber-600 dark:text-amber-400 block mb-1">P2P WebRTC / PeerJS</span>
+            <p class="text-[#4d4d4d] dark:text-[#a1a1aa]">Direct peer-to-peer connection for ultra-low latency online friendly matches.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Open Source Acknowledgement -->
+    <section class="p-6 sm:p-8 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+      <h3 class="text-base font-bold text-[#171717] dark:text-white flex items-center gap-2">
+        <span>🤝</span>
+        <span>Open Source Attribution</span>
+      </h3>
+      <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+        Chess Web stands on the shoulders of giants. Our AI engine is powered by Stockfish, an open-source project licensed under the GNU General Public License v3 (GPL v3). We also thank the creators of chess.js and the global open-source chess community.
+      </p>
+    </section>
+
+    <!-- Organization Profile Table -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-[#171717] dark:text-white tracking-tight flex items-center gap-2.5">
+        <span class="text-amber-500">◆</span>
+        <span>Platform Overview</span>
+      </h2>
+
+      <div class="rounded-2xl border border-[#ebebeb] dark:border-[#27272a] overflow-hidden bg-white dark:bg-[#121214]">
+        <table class="w-full text-left text-xs sm:text-sm">
+          <tbody class="divide-y divide-[#ebebeb] dark:divide-[#27272a]">
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b] w-1/3">
+                Service Name
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                Chess Web (Free Online Chess)
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                Team & Operations
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                Chess Web Core Project
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                Official Domain
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 font-mono text-[#4d4d4d] dark:text-[#a1a1aa]">
+                https://チェスweb.com
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                Mission
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                Providing free, instant, educational chess tools to chess players of all skill levels worldwide.
+              </td>
+            </tr>
+            <tr>
+              <th class="py-3.5 px-4 sm:px-6 font-semibold text-[#171717] dark:text-white bg-[#fafafa] dark:bg-[#18181b]">
+                Contact
+              </th>
+              <td class="py-3.5 px-4 sm:px-6 text-[#4d4d4d] dark:text-[#a1a1aa]">
+                <a href={translatePath('/contact')} class="text-amber-600 dark:text-amber-400 underline hover:opacity-80">
+                  Open Contact Form
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bottom CTA Bar -->
+    <div class="p-8 rounded-2xl bg-gradient-to-br from-[#171717] to-[#27272a] text-white text-center space-y-4 shadow-lg">
+      <h3 class="text-xl sm:text-2xl font-bold tracking-tight">
+        Ready to play your next match?
+      </h3>
+      <p class="text-xs sm:text-sm text-[#a1a1aa] max-w-md mx-auto">
+        Whether you are learning the moves or testing your tactics against level 9 Stockfish, start your game in one click.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <a
+          href={translatePath('/')}
+          class="px-5 py-2.5 rounded-xl bg-white text-[#171717] text-xs font-bold hover:bg-[#ededed] transition-all shadow-xs active:scale-95"
+        >
+          Play Game Now ▶
+        </a>
+        <a
+          href={translatePath('/learn')}
+          class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all active:scale-95"
+        >
+          Explore Rules & Tutorial 📖
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>

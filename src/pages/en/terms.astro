@@ -1,0 +1,179 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations, useTranslatedPath } from '../../i18n/utils';
+
+const t = useTranslations('en');
+const translatePath = useTranslatedPath('en');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  'name': 'Terms & Conditions | Terms of Service & Fair Play | Chess Web',
+  'description': 'Review our terms of service, fair play and anti-engine policies for multiplayer games, open-source attributions, and legal disclaimers.',
+  'inLanguage': 'en',
+  'url': 'https://チェスweb.com/en/terms',
+};
+---
+
+<Layout
+  lang="en"
+  title={t('terms.metaTitle')}
+  description={t('terms.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-12">
+    <!-- Header -->
+    <header class="text-center max-w-2xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span>LEGAL & TERMS OF SERVICE</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        Terms & Conditions<br />
+        <span class="text-base sm:text-lg font-normal text-[#8f8f8f] dark:text-[#71717a] block mt-2">
+          Service Rules & Fair Play Policy
+        </span>
+      </h1>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#71717a] font-mono">
+        Effective Date: October 14, 2026 ｜ Last Revised: October 14, 2026
+      </p>
+    </header>
+
+    <!-- Content Sections Card -->
+    <article class="p-6 sm:p-10 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-10 text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+      <!-- Section 1 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>1. Acceptance of Terms</span>
+        </h2>
+        <p>
+          By accessing or using Chess Web (https://チェスweb.com, the "Platform"), including playing against computer AI, challenging opponents locally or online, or reading tutorials, you agree to comply with and be bound by these Terms & Conditions.
+        </p>
+        <p>
+          If you do not agree to these Terms, please do not use the Platform.
+        </p>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>2. Service Description & Free Access</span>
+        </h2>
+        <p>
+          Chess Web is provided free of charge without mandatory user registration or paywalls. We grant you a revocable, non-exclusive, non-transferable personal license to play chess games and access instructional materials for personal, non-commercial enjoyment.
+        </p>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>3. Fair Play Policy & Prohibited Conduct</span>
+        </h2>
+        <p>To preserve a fun and sportsmanlike community, all users must abide by our Fair Play guidelines:</p>
+
+        <div class="space-y-3 pt-2">
+          <div class="p-4 rounded-xl bg-red-500/5 border border-red-500/20 space-y-1 text-xs">
+            <span class="font-bold text-red-600 dark:text-red-400 block">
+              🚫 Prohibition of Engine Assistance in Human vs Human Matches
+            </span>
+            <p>
+              When participating in online multiplayer games against another human player, you may NOT use third-party chess engines, bots, or external calculation tools to determine your moves. (You are, of course, free to utilize built-in hints and undo moves while training against AI or studying tutorial positions).
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1 text-xs">
+            <span class="font-bold text-[#171717] dark:text-white block">
+              ⚠️ Technical Interference & Abuse
+            </span>
+            <p>
+              You agree not to execute automated scraping scripts, launch denial-of-service (DoS/DDoS) attacks, exploit potential security vulnerabilities, or interfere with other players' connections.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1 text-xs">
+            <span class="font-bold text-[#171717] dark:text-white block">
+              ⚠️ Respectful Communication
+            </span>
+            <p>
+              Any communications submitted through our contact channels must remain respectful and free of defamation, harassment, spam, or unlawful material.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>4. Intellectual Property & Open-Source Licenses</span>
+        </h2>
+        <p>
+          1. The Chess Web branding, layout, original designs, graphics, and interface code are protected by copyright and intellectual property laws.
+        </p>
+        <p>
+          2. The Stockfish chess engine incorporated in this site is distributed under the terms of the GNU General Public License v3 (GPL v3). Other open-source packages are used in compliance with their respective licenses (MIT/BSD/Apache).
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>5. Disclaimer of Warranties</span>
+        </h2>
+        <p>
+          THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR UNINTERRUPTED OPERABILITY.
+        </p>
+      </section>
+
+      <!-- Section 6 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>6. Limitation of Liability</span>
+        </h2>
+        <p>
+          To the maximum extent permitted by applicable law, Chess Web and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use or inability to use the Platform.
+        </p>
+      </section>
+
+      <!-- Section 7 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>7. Modifications to Service & Terms</span>
+        </h2>
+        <p>
+          We reserve the right to modify or discontinue any feature of the site at any time without prior notice. Continued use of the platform after updates to these terms constitutes acceptance of the new terms.
+        </p>
+      </section>
+
+      <!-- Section 8 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>8. Governing Law & Jurisdiction</span>
+        </h2>
+        <p>
+          These Terms and any disputes arising out of or related to the Platform shall be governed by and construed in accordance with the laws of Japan, and the Tokyo District Court shall have exclusive jurisdiction as the court of first instance.
+        </p>
+      </section>
+
+      <!-- Contact Footer -->
+      <section class="space-y-2 pt-2 border-t border-[#ebebeb] dark:border-[#27272a]">
+        <h3 class="text-xs sm:text-sm font-bold text-[#171717] dark:text-white">
+          Questions About Terms?
+        </h3>
+        <p class="text-xs">
+          If you have any questions or require legal clarification regarding these terms, please contact us through our
+          <a href={translatePath('/contact')} class="text-amber-600 dark:text-amber-400 underline">
+            Contact Page
+          </a>.
+        </p>
+      </section>
+    </article>
+  </div>
+</Layout>

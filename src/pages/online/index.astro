@@ -1,0 +1,99 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ChessApp from '../../components/chess/ChessApp';
+import { useTranslations } from '../../i18n/utils';
+
+const t = useTranslations('ja');
+const title = 'オンラインチェス - 友達と2人で対戦 | チェスWeb';
+const description = '無料のオンラインチェス。招待URLかQRコードを送るだけで、離れた友達と2人でチェス対戦ができます。登録・アプリ不要。持ち時間設定では、ラピッドやブリッツなどのカスタマイズも可能です。';
+---
+
+<Layout lang="ja" title={title} description={description}>
+  <!-- Hero Section -->
+  <section class="w-full pt-8 pb-4 sm:pt-12 sm:pb-6 px-4 text-center select-none">
+    <div class="max-w-3xl mx-auto space-y-3">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[11px] font-medium text-[#4d4d4d] dark:text-[#a1a1aa] shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>登録・アプリ不要のオンライン対戦</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        オンラインチェス - 友達と2人で対戦
+      </h1>
+      <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">
+        招待URLをコピーするか、QRコードを読み取ってもらうだけで、すぐに友達とリアルタイム対戦を始められます。
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive Game Area with Online Mode Activated -->
+  <section id="game-board" class="w-full">
+    <ChessApp client:only="react" lang="ja" initialMode="online">
+      <!-- Loading Fallback Skeleton -->
+      <div slot="fallback" class="w-full max-w-4xl mx-auto min-h-[560px] bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] rounded-3xl p-8 flex flex-col items-center justify-center space-y-4 my-8 shadow-xs">
+        <div class="w-12 h-12 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-[#171717] dark:text-white shadow-inner">
+          <svg class="animate-spin h-6 w-6 text-[#171717] dark:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+        </div>
+        <div class="text-center space-y-1">
+          <div class="text-sm font-bold text-[#171717] dark:text-white">{t('hero.loadingTitle')}</div>
+          <div class="text-xs text-[#8f8f8f] dark:text-[#71717a] font-mono">{t('hero.loadingSubtitle')}</div>
+        </div>
+      </div>
+    </ChessApp>
+  </section>
+
+  <!-- Feature Cards Grid -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+      <h2 class="text-xl sm:text-3xl font-bold text-[#171717] dark:text-white">
+        友達対戦（オンライン）の特徴
+      </h2>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#a1a1aa]">
+        ブラウザを開くだけで、PCでもスマートフォンでも手軽にチェス対戦が楽しめます
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Card 1 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            🔗
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">リンクまたはQRコードで簡単招待</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            招待リンクを送るか、QRコードをスマホカメラで読み取ってもらうだけで、アプリのインストールやアカウント登録なしにそのまま対局が開始します。
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            ⏱️
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">多彩な持ち時間設定</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            時間制限なしのじっくり対局から、3分・5分・10分の切れ負け、さらに1手ごとに秒数が増えるインクリメント（5分+3秒、10分+5秒など）まで幅広く選択可能です。
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+        <div>
+          <div class="w-10 h-10 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-lg mb-4">
+            🔄
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white mb-2">手番の自由選択と自動同期</h3>
+          <p class="text-xs text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            先手（白）、後手（黒）、または公平なランダムから手番を選択できます。指した手は瞬時に相手の盤面に滑らかに反映されます。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

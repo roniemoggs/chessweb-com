@@ -1,0 +1,335 @@
+---
+// src/components/chess/ChessFaqSection.astro
+import { faqData, faqCategories, getFaqSchemaJsonLd } from '../../data/faqData';
+
+const faqJsonLd = getFaqSchemaJsonLd(faqData);
+---
+
+<section
+  id="faq"
+  class="scroll-mt-20 max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 border-t border-[#ebebeb] dark:border-[#27272a]"
+  aria-labelledby="faq-main-heading"
+>
+
+  <!-- Section Header -->
+  <div class="text-center max-w-2xl mx-auto mb-10 space-y-3">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[11px] font-mono text-[#8f8f8f] dark:text-[#a1a1aa] shadow-2xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>よくある質問と解説 • チェスの知識とQ&A</span>
+    </div>
+    <h2
+      id="faq-main-heading"
+      class="text-2xl sm:text-4xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight"
+    >
+      チェスに関するよくある質問
+    </h2>
+    <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed max-w-xl mx-auto">
+      チェスと将棋の違い、脳トレ・IQへの影響、日本での普及状況から、初心者がゼロから始めて勝つためのコツまで分かりやすく解説します。
+    </p>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="mb-8 space-y-4">
+    <!-- Live Search Input -->
+    <div class="relative max-w-xl mx-auto">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8f8f8f] dark:text-[#71717a]">
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input
+        type="search"
+        id="faq-search-input"
+        placeholder="質問やキーワードを検索（例: 将棋, 初心者, ルール, IQ）"
+        class="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white dark:bg-[#141416] border border-[#ebebeb] dark:border-[#27272a] text-xs sm:text-sm text-[#171717] dark:text-white placeholder-[#8f8f8f] dark:placeholder-[#71717a] focus:outline-none focus:ring-2 focus:ring-[#171717]/20 dark:focus:ring-white/20 transition-all shadow-xs"
+        aria-label="FAQキーワード検索"
+      />
+      <button
+        id="faq-search-clear"
+        type="button"
+        class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#8f8f8f] hover:text-[#171717] dark:hover:text-white cursor-pointer"
+        aria-label="検索クリア"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Category Tabs & Expand/Collapse Toggle -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="FAQカテゴリー切り替え">
+        {
+          faqCategories.map((cat) => (
+            <button
+              type="button"
+              data-faq-category={cat.id}
+              class={`faq-category-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                cat.id === 'all'
+                  ? 'bg-[#171717] text-white dark:bg-white dark:text-[#171717] shadow-xs active'
+                  : 'bg-white dark:bg-[#141416] text-[#4d4d4d] dark:text-[#a1a1aa] border border-[#ebebeb] dark:border-[#27272a] hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      <!-- Expand / Collapse All -->
+      <div class="flex items-center gap-2 text-xs">
+        <button
+          type="button"
+          id="faq-toggle-all-btn"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#141416] border border-[#ebebeb] dark:border-[#27272a] text-[#4d4d4d] dark:text-[#a1a1aa] hover:text-[#171717] dark:hover:text-white transition-all shadow-xs cursor-pointer"
+        >
+          <span id="faq-toggle-all-icon">↕</span>
+          <span id="faq-toggle-all-text">すべて開く</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Accordion List -->
+  <div id="faq-list" class="space-y-3.5">
+    {
+      faqData.map((item, index) => (
+        <details
+          class="faq-item group rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs hover:border-[#171717]/20 dark:hover:border-white/20 transition-all overflow-hidden"
+          data-category={item.category}
+          data-keywords={`${item.question} ${item.answerPlain}`.toLowerCase()}
+          open={item.isOpenDefault}
+        >
+          <summary class="cursor-pointer list-none p-5 sm:p-6 flex items-start justify-between gap-4 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-3xl">
+            <div class="space-y-1.5 flex-1 pr-2">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#a1a1aa]">
+                  {item.badge}
+                </span>
+                <span class="text-[10px] font-mono text-[#8f8f8f] dark:text-[#71717a]">
+                  Q{String(index + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex items-start gap-2">
+                <span class="text-emerald-600 dark:text-emerald-400 font-mono text-base font-extrabold shrink-0">
+                  Q.
+                </span>
+                <span>{item.question}</span>
+              </h3>
+            </div>
+
+            <!-- Custom Animated Chevron -->
+            <div class="w-8 h-8 rounded-2xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] flex items-center justify-center text-[#8f8f8f] dark:text-[#a1a1aa] group-hover:text-[#171717] dark:group-hover:text-white shrink-0 transition-colors">
+              <svg
+                class="w-4 h-4 transform transition-transform duration-200 group-open:rotate-180"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+
+          <!-- Answer Body -->
+          <div class="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 border-t border-[#ebebeb]/60 dark:border-[#27272a]/60 text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+            <div class="pt-4 flex items-start gap-3">
+              <span class="w-6 h-6 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                A
+              </span>
+              <div class="space-y-3 flex-1 faq-answer-content" set:html={item.answerHtml} />
+            </div>
+          </div>
+        </details>
+      ))
+    }
+  </div>
+
+  <!-- Zero Results Message (shown when search has no matches) -->
+  <div
+    id="faq-no-results"
+    class="hidden text-center py-12 px-4 rounded-3xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-3 my-4"
+  >
+    <div class="text-3xl">🔍</div>
+    <div class="space-y-1">
+      <h3 class="font-bold text-sm sm:text-base text-[#171717] dark:text-white">
+        一致する質問が見つかりませんでした
+      </h3>
+      <p class="text-xs text-[#8f8f8f] dark:text-[#a1a1aa]">
+        別のキーワードで検索するか、カテゴリーを「すべて」に戻してお試しください。
+      </p>
+    </div>
+    <button
+      type="button"
+      id="faq-reset-filter-btn"
+      class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#171717] text-white dark:bg-white dark:text-[#171717] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      すべての質問を表示する
+    </button>
+  </div>
+
+  <!-- Bottom CTA Box -->
+  <div class="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#fafafa] to-white dark:from-[#18181b] dark:to-[#121214] border border-[#ebebeb] dark:border-[#27272a] text-center space-y-4 shadow-xs">
+    <div class="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+      <span>♔ 今すぐ対局</span>
+    </div>
+    <h3 class="text-lg sm:text-2xl font-bold text-[#171717] dark:text-white">
+      ルールや疑問が解決したら、さっそく盤面で指してみませんか？
+    </h3>
+    <p class="text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] max-w-lg mx-auto leading-relaxed">
+      登録不要・完全無料。動かせるマスが光る初心者サポート付きで、Stockfish AIとの練習対戦や友達との対局がすぐに楽しめます。
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <a
+        href="#game-board"
+        class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-[#171717] dark:bg-white text-white dark:text-[#171717] text-xs sm:text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
+      >
+        <span>🤖</span>
+        <span>今すぐAIと対戦する</span>
+      </a>
+      <a
+        href="/rules"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-[#141416] border border-[#ebebeb] dark:border-[#27272a] text-[#171717] dark:text-white text-xs sm:text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all shadow-xs cursor-pointer"
+      >
+        <span>📖</span>
+        <span>動かして学べるルール解説を見る</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Filter & Live Search Client Script -->
+<script is:inline>
+  (() => {
+    const searchInput = document.getElementById('faq-search-input');
+    const searchClearBtn = document.getElementById('faq-search-clear');
+    const categoryBtns = document.querySelectorAll('.faq-category-btn');
+    const faqItems = document.querySelectorAll('.faq-item');
+    const noResultsBox = document.getElementById('faq-no-results');
+    const resetFilterBtn = document.getElementById('faq-reset-filter-btn');
+    const toggleAllBtn = document.getElementById('faq-toggle-all-btn');
+    const toggleAllText = document.getElementById('faq-toggle-all-text');
+
+    let currentCategory = 'all';
+    let currentSearchTerm = '';
+    let allExpanded = false;
+
+    function updateFaqVisibility() {
+      let visibleCount = 0;
+      const term = currentSearchTerm.trim().toLowerCase();
+
+      faqItems.forEach((item) => {
+        const itemCategory = item.getAttribute('data-category');
+        const keywords = item.getAttribute('data-keywords') || '';
+
+        const matchesCategory = currentCategory === 'all' || itemCategory === currentCategory;
+        const matchesSearch = !term || keywords.includes(term);
+
+        if (matchesCategory && matchesSearch) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      if (noResultsBox) {
+        if (visibleCount === 0) {
+          noResultsBox.classList.remove('hidden');
+        } else {
+          noResultsBox.classList.add('hidden');
+        }
+      }
+
+      if (searchClearBtn) {
+        if (term.length > 0) {
+          searchClearBtn.classList.remove('hidden');
+        } else {
+          searchClearBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // Category button click handler
+    categoryBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const cat = btn.getAttribute('data-faq-category');
+        if (!cat) return;
+
+        currentCategory = cat;
+
+        categoryBtns.forEach((b) => {
+          b.classList.remove('bg-[#171717]', 'text-white', 'dark:bg-white', 'dark:text-[#171717]', 'shadow-xs', 'active');
+          b.classList.add('bg-white', 'dark:bg-[#141416]', 'text-[#4d4d4d]', 'dark:text-[#a1a1aa]', 'border', 'border-[#ebebeb]', 'dark:border-[#27272a]');
+        });
+
+        btn.classList.add('bg-[#171717]', 'text-white', 'dark:bg-white', 'dark:text-[#171717]', 'shadow-xs', 'active');
+        btn.classList.remove('bg-white', 'dark:bg-[#141416]', 'text-[#4d4d4d]', 'dark:text-[#a1a1aa]');
+
+        updateFaqVisibility();
+      });
+    });
+
+    // Search input handler
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        currentSearchTerm = e.target.value;
+        updateFaqVisibility();
+      });
+    }
+
+    // Clear search handler
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', () => {
+        if (searchInput) {
+          searchInput.value = '';
+          currentSearchTerm = '';
+          searchInput.focus();
+        }
+        updateFaqVisibility();
+      });
+    }
+
+    // Reset filter button
+    if (resetFilterBtn) {
+      resetFilterBtn.addEventListener('click', () => {
+        currentCategory = 'all';
+        currentSearchTerm = '';
+        if (searchInput) searchInput.value = '';
+
+        categoryBtns.forEach((b) => {
+          const isAll = b.getAttribute('data-faq-category') === 'all';
+          if (isAll) {
+            b.classList.add('bg-[#171717]', 'text-white', 'dark:bg-white', 'dark:text-[#171717]', 'shadow-xs', 'active');
+            b.classList.remove('bg-white', 'dark:bg-[#141416]', 'text-[#4d4d4d]', 'dark:text-[#a1a1aa]');
+          } else {
+            b.classList.remove('bg-[#171717]', 'text-white', 'dark:bg-white', 'dark:text-[#171717]', 'shadow-xs', 'active');
+            b.classList.add('bg-white', 'dark:bg-[#141416]', 'text-[#4d4d4d]', 'dark:text-[#a1a1aa]');
+          }
+        });
+
+        updateFaqVisibility();
+      });
+    }
+
+    // Toggle All Expand / Collapse
+    if (toggleAllBtn && toggleAllText) {
+      toggleAllBtn.addEventListener('click', () => {
+        allExpanded = !allExpanded;
+        faqItems.forEach((item) => {
+          if (!item.classList.contains('hidden')) {
+            if (allExpanded) {
+              item.setAttribute('open', '');
+            } else {
+              item.removeAttribute('open');
+            }
+          }
+        });
+        toggleAllText.textContent = allExpanded ? 'すべて閉じる' : 'すべて開く';
+      });
+    }
+  })();
+</script>

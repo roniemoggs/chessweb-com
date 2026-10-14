@@ -1,0 +1,190 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { useTranslations, useTranslatedPath } from '../i18n/utils';
+
+const t = useTranslations('ja');
+const translatePath = useTranslatedPath('ja');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  'name': 'プライバシーポリシー | 個人情報保護方針 | チェスweb',
+  'description': 'チェスwebにおける個人情報の取扱い、Cookie・ローカルストレージの利用目的、セキュリティ対策、GDPRおよび個人情報保護法に基づく方針を定めています。',
+  'inLanguage': 'ja',
+  'url': 'https://チェスweb.com/privacy',
+};
+---
+
+<Layout
+  lang="ja"
+  title={t('privacy.metaTitle')}
+  description={t('privacy.metaDesc')}
+  structuredData={structuredData}
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-12">
+    <!-- Header -->
+    <header class="text-center max-w-2xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-mono font-bold shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span>PRIVACY & DATA PROTECTION</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
+        プライバシーポリシー<br />
+        <span class="text-base sm:text-lg font-normal text-[#8f8f8f] dark:text-[#71717a] block mt-2">
+          （個人情報保護方針）
+        </span>
+      </h1>
+      <p class="text-xs sm:text-sm text-[#8f8f8f] dark:text-[#71717a] font-mono">
+        制定日: 2026年10月14日 ｜ 最終改定日: 2026年10月14日
+      </p>
+    </header>
+
+    <!-- Content Sections Card -->
+    <article class="p-6 sm:p-10 rounded-2xl bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-xs space-y-10 text-xs sm:text-sm text-[#4d4d4d] dark:text-[#a1a1aa] leading-relaxed">
+      <!-- Section 1 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>1. 基本方針</span>
+        </h2>
+        <p>
+          「チェスweb（チェスweb.com）」（以下「当サイト」）は、ユーザーのプライバシーを最優先に尊重し、安心してチェスを楽しんでいただけるよう、個人情報の保護に関する法律（個人情報保護法）および関連法令を遵守し、以下の方針に従って適切に取り扱います。
+        </p>
+        <p>
+          当サイトは、すべてのゲームプレイにおいて<strong>会員登録やログインを一切不要</strong>としており、対局を楽しむために氏名や住所、電話番号などの個人を特定できる情報を収集・要求することはありません。
+        </p>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>2. 取得する情報とその管理方法</span>
+        </h2>
+        <p>当サイトがサービス提供にあたり取り扱う情報は以下の通りです。</p>
+
+        <div class="space-y-4 pt-2">
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (1) ブラウザのローカルストレージ（Local Storage）情報
+            </h3>
+            <p>
+              当サイトでは、ユーザーの利便性向上のため、お使いの端末ブラウザ内のローカルストレージに以下の設定情報を保存しています。これらの情報はユーザーの端末内でのみ保持され、当サイトのサーバーに送信・蓄積されることはありません。
+            </p>
+            <ul class="list-disc list-inside space-y-1 pl-2 text-[11px] sm:text-xs">
+              <li>盤面テーマ・駒のデザイン設定</li>
+              <li>着手効果音のオン/オフおよび音量設定</li>
+              <li>直近のAI対局難易度および持ち時間設定</li>
+              <li>ダークモード / ライトモードの表示設定</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (2) Stockfish AI対局の計算処理について
+            </h3>
+            <p>
+              AI対局エンジン（Stockfish）は、WebAssembly（WASM）技術によりユーザーのお使いのブラウザ上でローカル動作します。盤面データや指し手はすべて端末内のバックグラウンドプロセスで計算され、外部サーバーに送信されることなく完全にプライベートに対局が処理されます。
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (3) オンライン対戦（友達対局）の通信データ
+            </h3>
+            <p>
+              部屋番号（合言葉）を用いたオンライン対局では、ピアツーピア（WebRTC）または中継通信を通じて盤面の指し手データのみを一時的に送受信します。対戦終了後に通信セッションは破棄され、恒久的な対局履歴のサーバー保存は行われません。
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1.5">
+            <h3 class="font-bold text-[#171717] dark:text-white text-xs sm:text-sm">
+              (4) お問い合わせ時にいただく情報
+            </h3>
+            <p>
+              お問い合わせフォームまたは公式メールアドレスよりご連絡をいただいた場合、氏名（またはニックネーム）、メールアドレス、お問い合わせ内容を取得します。これらはご質問への回答や対応の確認にのみ利用し、目的外の利用はいたしません。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>3. Cookie（クッキー）およびアクセスログについて</span>
+        </h2>
+        <p>
+          当サイトでは、サービスの安定稼働、不正アクセスの検知・防止、サイトパフォーマンスの測定のために、標準的なサーバーアクセスログ（IPアドレス、アクセス日時、ユーザーエージェント、リファラー情報）を最小限記録する場合があります。これらの情報は統計的分析およびセキュリティ保護にのみ使用され、個人を特定する目的で使用されることはありません。
+        </p>
+        <p>
+          また、ブラウザの設定によりCookieの受け入れを拒否することも可能です。Cookieを拒否した場合でも、チェスゲームの基本対局機能に支障はありません。
+        </p>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>4. 個人情報の第三者提供について</span>
+        </h2>
+        <p>
+          当サイトは、法令に基づく場合（裁判所、警察等の公的機関からの開示請求など）を除き、事前にユーザーの同意を得ることなく、取得した個人情報を第三者に提供・開示することはありません。
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>5. 安全管理措置（セキュリティ）</span>
+        </h2>
+        <p>
+          当サイトは、通信内容の盗聴や改ざんを防止するため、全ページにおいて常時SSL/TLSによる暗号化通信を採用しています。また、外部攻撃対策やサーバーのセキュリティ更新を継続的に実施し、安全な対局環境の維持に努めています。
+        </p>
+      </section>
+
+      <!-- Section 6 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>6. ユーザーによるデータの消去方法</span>
+        </h2>
+        <p>
+          ブラウザに保存された設定情報（ローカルストレージ）は、お使いのブラウザの設定から「サイトデータ（Cookieおよびローカルデータ）の削除」を実行することで、いつでもユーザーご自身の操作により完全に消去することができます。
+        </p>
+      </section>
+
+      <!-- Section 7 -->
+      <section class="space-y-3">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>7. プライバシーポリシーの変更・改定</span>
+        </h2>
+        <p>
+          当サイトは、法令の改正やサービスの改善に伴い、本ポリシーの内容を改定することがあります。重要な変更がある場合には、当サイト上にて分かりやすい方法で告知いたします。
+        </p>
+      </section>
+
+      <!-- Section 8 -->
+      <section class="space-y-3 pt-2 border-t border-[#ebebeb] dark:border-[#27272a]">
+        <h2 class="text-base sm:text-lg font-bold text-[#171717] dark:text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>8. お問い合わせ窓口</span>
+        </h2>
+        <p>
+          本プライバシーポリシーまたは当サイトのデータ取扱いに関するご質問・ご相談は、以下のお問い合わせ窓口よりご連絡ください。
+        </p>
+        <div class="p-4 rounded-xl bg-[#fafafa] dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] space-y-1 text-xs">
+          <p class="font-bold text-[#171717] dark:text-white">チェスweb 運営窓口</p>
+          <p>
+            メールアドレス: <a href="mailto:support@チェスweb.com" class="text-amber-600 dark:text-amber-400 underline font-mono">support@チェスweb.com</a>
+          </p>
+          <p>
+            お問い合わせフォーム: <a href={translatePath('/contact')} class="text-amber-600 dark:text-amber-400 underline">こちらをクリック</a>
+          </p>
+        </div>
+      </section>
+    </article>
+  </div>
+</Layout>

@@ -1,23 +1,192 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import type { SupportedLanguage } from '../i18n/ui';
+import '../styles/global.css';
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+interface Props {
+  title?: string;
+  description?: string;
+  lang?: SupportedLanguage;
+  ogImage?: string;
+  keywords?: string;
+  structuredData?: Record<string, any> | Array<Record<string, any>>;
+  noindex?: boolean;
+}
+
+const currentLang = Astro.props.lang || getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+
+const title = Astro.props.title || t('site.title');
+const description = Astro.props.description || t('site.description');
+const keywords = Astro.props.keywords || t('site.keywords');
+const siteBrand = t('site.brand');
+
+const rawPath = Astro.url.pathname;
+const cleanPath = rawPath.replace(/^\/en(\/|$)/, '/');
+const normalizedPath = cleanPath === '' ? '/' : cleanPath;
+const jaPath = normalizedPath;
+const enPath = normalizedPath === '/' ? '/en/' : `/en${normalizedPath}`;
+const canonicalUrl = new URL(rawPath, 'https://チェスweb.com').href;
+const jaUrl = new URL(jaPath, 'https://チェスweb.com').href;
+const enUrl = new URL(enPath, 'https://チェスweb.com').href;
+
+const ogImageUrl = Astro.props.ogImage || 'https://チェスweb.com/og-image.jpg';
+
+// Base WebSite Structured Data
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  'name': siteBrand,
+  'alternateName': ['チェスweb', 'チェス web', 'ちぇすWeb', 'チェスweb.com', 'Chess Web'],
+  'url': 'https://チェスweb.com/',
+  'inLanguage': currentLang,
+  'description': description,
+  'publisher': {
+    '@type': 'Organization',
+    'name': 'チェスweb.com',
+    'url': 'https://チェスweb.com/',
+    'logo': {
+      '@type': 'ImageObject',
+      'url': 'https://チェスweb.com/favicon.svg'
+    }
+  }
+};
+
+// Base WebApplication Structured Data for Chess Game Tool
+const webAppSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  'name': siteBrand,
+  'alternateName': ['チェスweb', 'チェス web 無料', 'ちぇす', '無料チェスゲーム', 'Chess Web'],
+  'url': canonicalUrl,
+  'applicationCategory': 'GameApplication',
+  'genre': ['Board Game', 'Chess', 'Strategy', 'Mind Sport', 'テーブルゲーム', '頭脳スポーツ'],
+  'operatingSystem': 'Any (Web Browser)',
+  'browserRequirements': 'Requires JavaScript. Requires HTML5.',
+  'offers': {
+    '@type': 'Offer',
+    'price': '0',
+    'priceCurrency': 'JPY',
+    'availability': 'https://schema.org/InStock'
+  },
+  'image': ogImageUrl,
+  'description': description,
+  'featureList': currentLang === 'ja' ? [
+    'Stockfish AI対局（超初級から伝説級まで9段階）',
+    '同一端末でのローカル2人対戦（盤面反転対応）',
+    'リアルタイム形勢評価値バー＆最善手ヒント',
+    '待った（アンドゥ）機能＆駒音フィードバック',
+    '持ち時間設定（無制限・10分・3分・1分）'
+  ] : [
+    'Stockfish AI Opponent with 9 Difficulty Levels',
+    'Local 2-Player Pass-and-Play Mode with Board Rotation',
+    'AI Best-Move Tactical Hints',
+    'Move Undo & Authentic Sound Feedback',
+    'Custom Time Controls (Unlimited, 10m Rapid, 3m Blitz, 1m Bullet)'
+  ]
+};
+
+const customSchemas = Astro.props.structuredData
+  ? Array.isArray(Astro.props.structuredData)
+    ? Astro.props.structuredData
+    : [Astro.props.structuredData]
+  : [];
+
+const jsonLdData = [websiteSchema, webAppSchema, ...customSchemas];
+---
+
+<!doctype html>
+<html lang={currentLang} class="dark scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Favicons & App Icons -->
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="チェスweb" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <!-- SEO & Metadata -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
+    <meta name="author" content="チェスweb.com" />
+    <meta name="robots" content={Astro.props.noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+    <meta name="googlebot" content={Astro.props.noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Hreflang Tags for Multi-Language SEO -->
+    <link rel="alternate" hreflang="ja" href={jaUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={jaUrl} />
+
+    <!-- Open Graph / SNS -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={siteBrand} />
+    <meta property="og:locale" content={currentLang === 'ja' ? 'ja_JP' : 'en_US'} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:secure_url" content={ogImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="675" />
+    <meta property="og:image:alt" content={title} />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalUrl} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={title} />
+
+    <!-- Security Directives -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema).replace(/</g, '\\u003c')} />
+    <script type="application/ld+json" set:html={JSON.stringify(webAppSchema).replace(/</g, '\\u003c')} />
+    {customSchemas.map((schema: Record<string, any>) => (
+      <script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />
+    ))}
+
+    <!-- Google Fonts: Geist Sans & Mono & Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Dark Mode Init Script (Defaults to dark mode) -->
+    <script is:inline>
+      try {
+        const savedTheme = localStorage.getItem('chess_theme_mode');
+        if (savedTheme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col bg-[#09090b] text-[#ededed] dark:bg-[#09090b] dark:text-[#ededed] antialiased selection:bg-white selection:text-black transition-colors duration-200">
+    <Header lang={currentLang} />
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+    <Footer lang={currentLang} />
+  </body>
+</html>
