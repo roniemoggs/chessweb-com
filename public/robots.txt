@@ -1,5 +1,16 @@
+# Robots.txt for チェスweb.com / xn--web-2i4bpdzb.com
+# Reference: https://developers.google.com/search/docs/crawling-indexing/robots/intro
+
 User-agent: *
 Allow: /
+Disallow: /404
+Disallow: /500
+Disallow: /en/404
+Disallow: /en/500
 
+# Sitemaps (Punycode canonical & Internationalized UTF-8 for universal search engine indexing)
+Sitemap: https://xn--web-2i4bpdzb.com/sitemap-index.xml
+Sitemap: https://xn--web-2i4bpdzb.com/sitemap.xml
 Sitemap: https://チェスweb.com/sitemap-index.xml
 Sitemap: https://チェスweb.com/sitemap.xml
+
