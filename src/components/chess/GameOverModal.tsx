@@ -1,6 +1,7 @@
 import React from 'react';
-import { Trophy, RefreshCw, Eye } from 'lucide-react';
+import { Trophy, RefreshCw, Eye, Loader2, X, Plus } from 'lucide-react';
 import type { GameTranslations } from './gameTranslations';
+import type { OnlineRematchState } from '../../lib/onlineChessManager';
 import { useLockBodyScroll } from './useLockBodyScroll';
 
 export type GameOverReason = 'checkmate' | 'stalemate' | 'draw' | 'timeout' | 'resignation' | 'abandonment';
@@ -15,6 +16,14 @@ interface GameOverModalProps {
   moveCount: number;
   onPlayAgain: () => void;
   onClose: () => void;
+  onlineRematchState?: OnlineRematchState;
+  isOpponentDisconnected?: boolean;
+  opponentHasLeft?: boolean;
+  onOfferRematch?: () => void;
+  onAcceptRematch?: () => void;
+  onDeclineRematch?: () => void;
+  onCancelRematch?: () => void;
+  onNewOnlineRoom?: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -27,6 +36,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   moveCount,
   onPlayAgain,
   onClose,
+  onlineRematchState = 'none',
+  isOpponentDisconnected = false,
+  opponentHasLeft = false,
+  onOfferRematch,
+  onAcceptRematch,
+  onDeclineRematch,
+  onCancelRematch,
+  onNewOnlineRoom,
 }) => {
   useLockBodyScroll(isOpen);
 
@@ -143,25 +160,160 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="w-full flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={onPlayAgain}
-            className="w-full py-3 px-4 rounded-full bg-[#171717] hover:bg-[#333333] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#171717] font-medium text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>{t.playAgain}</span>
-          </button>
+        {gameMode === 'online' ? (
+          <div className="w-full flex flex-col gap-2.5">
+            {opponentHasLeft ? (
+              <>
+                <div className="w-full p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center animate-in fade-in">
+                  <p className="text-xs sm:text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {t.onlineOpponentLeftCannotRematch}
+                  </p>
+                </div>
+                {onNewOnlineRoom && (
+                  <button
+                    type="button"
+                    onClick={onNewOnlineRoom}
+                    className="w-full py-3 px-4 rounded-full bg-[#171717] hover:bg-[#333333] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#171717] font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{t.onlineCreateNewRoom}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 px-4 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{t.reviewBoard}</span>
+                </button>
+              </>
+            ) : onlineRematchState === 'offered_by_opponent' ? (
+              <>
+                <div className="w-full p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center animate-in fade-in">
+                  <p className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                    {t.onlineOpponentOfferedRematch}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onAcceptRematch}
+                  className="w-full py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98 animate-pulse"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>{t.onlineAcceptRematch}</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onDeclineRematch}
+                    className="flex-1 py-2.5 px-3 rounded-full bg-white dark:bg-[#18181b] hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-medium text-xs border border-rose-200 dark:border-rose-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>{t.onlineDeclineRematch}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 py-2.5 px-3 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{t.reviewBoard}</span>
+                  </button>
+                </div>
+              </>
+            ) : onlineRematchState === 'offered_by_me' ? (
+              <>
+                <div className="w-full p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center flex items-center justify-center gap-2 animate-in fade-in">
+                  <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-spin shrink-0" />
+                  <p className="text-xs sm:text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {t.onlineWaitingRematch}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onCancelRematch}
+                  className="w-full py-2.5 px-4 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#737373] dark:text-[#a1a1aa] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>{t.onlineCancelRematch}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 px-4 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{t.reviewBoard}</span>
+                </button>
+              </>
+            ) : onlineRematchState === 'accepted' ? (
+              <div className="w-full p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center flex items-center justify-center gap-2 animate-in fade-in">
+                <Loader2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-spin shrink-0" />
+                <p className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                  {t.onlineRematchStarting}
+                </p>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={isOpponentDisconnected}
+                  onClick={onOfferRematch}
+                  className={`w-full py-3 px-4 rounded-full font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                    isOpponentDisconnected
+                      ? 'bg-[#e4e4e7] dark:bg-[#27272a] text-[#a1a1aa] cursor-not-allowed opacity-60'
+                      : 'bg-[#171717] hover:bg-[#333333] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#171717]'
+                  }`}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>{isOpponentDisconnected ? t.onlineCannotRematchOffline : t.onlineOfferRematch}</span>
+                </button>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{t.reviewBoard}</span>
-          </button>
-        </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 py-2.5 px-3 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{t.reviewBoard}</span>
+                  </button>
+                  {onNewOnlineRoom && (
+                    <button
+                      type="button"
+                      onClick={onNewOnlineRoom}
+                      className="flex-1 py-2.5 px-3 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{t.onlineCreateNewRoom}</span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="w-full flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={onPlayAgain}
+              className="w-full py-3 px-4 rounded-full bg-[#171717] hover:bg-[#333333] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#171717] font-medium text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>{t.playAgain}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 px-4 rounded-full bg-white dark:bg-[#18181b] hover:bg-[#fafafa] dark:hover:bg-[#27272a] text-[#4d4d4d] dark:text-[#ededed] font-medium text-xs border border-[#ebebeb] dark:border-[#27272a] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>{t.reviewBoard}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

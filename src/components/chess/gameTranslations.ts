@@ -220,6 +220,19 @@ export interface GameTranslations {
   onlineWonByDisconnect: string;
   onlineLostByDisconnect: string;
   onlineDisconnectReason: string;
+  onlineRematch: string;
+  onlineOfferRematch: string;
+  onlineAcceptRematch: string;
+  onlineDeclineRematch: string;
+  onlineCancelRematch: string;
+  onlineWaitingRematch: string;
+  onlineOpponentOfferedRematch: string;
+  onlineRematchStarting: string;
+  onlineRematchDeclined: string;
+  onlineCreateNewRoom: string;
+  onlineRematchStarted: string;
+  onlineCannotRematchOffline: string;
+  onlineOpponentLeftCannotRematch: string;
 }
 
 export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
@@ -421,6 +434,19 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineWonByDisconnect: '相手の通信が切断されたため、不戦勝となりました',
     onlineLostByDisconnect: '通信が切断されたため、不戦敗となりました',
     onlineDisconnectReason: '通信切断（不戦勝）',
+    onlineRematch: '再戦',
+    onlineOfferRematch: '再戦を申し込む',
+    onlineAcceptRematch: '再戦を受ける',
+    onlineDeclineRematch: '辞退する',
+    onlineCancelRematch: '申し込みをキャンセル',
+    onlineWaitingRematch: '再戦を申し込みました。相手の返答を待っています…',
+    onlineOpponentOfferedRematch: '相手から再戦の申し込みが届きました！',
+    onlineRematchStarting: '再戦を開始します…',
+    onlineRematchDeclined: '相手が再戦を辞退しました',
+    onlineCreateNewRoom: '新しい部屋を作成',
+    onlineRematchStarted: '🎯 再戦開始！ あなたは{side}',
+    onlineCannotRematchOffline: '相手がオフラインのため再戦できません',
+    onlineOpponentLeftCannotRematch: '対戦相手が退室したため、再戦できません。',
   },
   en: {
     appTitle: 'Chess Web',
@@ -620,6 +646,19 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineWonByDisconnect: 'Opponent disconnected. You won by abandonment.',
     onlineLostByDisconnect: 'Lost by disconnection (abandonment).',
     onlineDisconnectReason: 'Abandonment',
+    onlineRematch: 'Rematch',
+    onlineOfferRematch: 'Offer Rematch',
+    onlineAcceptRematch: 'Accept Rematch',
+    onlineDeclineRematch: 'Decline',
+    onlineCancelRematch: 'Cancel Offer',
+    onlineWaitingRematch: 'Rematch offered. Waiting for opponent…',
+    onlineOpponentOfferedRematch: 'Opponent offered a rematch!',
+    onlineRematchStarting: 'Starting rematch…',
+    onlineRematchDeclined: 'Opponent declined rematch offer.',
+    onlineCreateNewRoom: 'Create New Room',
+    onlineRematchStarted: '🎯 Rematch started! You play {side}',
+    onlineCannotRematchOffline: 'Cannot rematch: opponent is offline',
+    onlineOpponentLeftCannotRematch: 'Your opponent has left the game and is no longer available for a rematch.',
   },
 };
 

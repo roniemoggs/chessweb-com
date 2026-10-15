@@ -14,12 +14,13 @@ import { getGameTranslations } from './gameTranslations';
 import { ChessPiece } from './ChessPiece';
 import { PieceInfoModal, type PieceType } from './PieceInfoModal';
 import { TimeControlInfoModal, type TimeControlTopic } from './TimeControlInfoModal';
-import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock, Sparkles } from 'lucide-react';
+import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock, Sparkles, RefreshCw } from 'lucide-react';
 import {
   OnlineChessManager,
   type OnlinePhase,
   type HostSidePref,
   type OnlineTimeControlId,
+  type OnlineRematchState,
   TIME_CONTROLS,
 } from '../../lib/onlineChessManager';
 import { OnlineCard } from './OnlineCard';
@@ -97,6 +98,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [onlineToastNotice, setOnlineToastNotice] = useState<string | null>(null);
   const [disconnectCountdown, setDisconnectCountdown] = useState<number | null>(null);
   const [isSelfDisconnected, setIsSelfDisconnected] = useState<boolean>(false);
+  const [onlineRematchState, setOnlineRematchState] = useState<OnlineRematchState>('none');
+  const [onlineOpponentHasLeft, setOnlineOpponentHasLeft] = useState<boolean>(false);
 
   // Effective online side determination to avoid null/mismatched side logic
   const effectiveOnlineMySide: 'w' | 'b' = useMemo(() => {
@@ -297,6 +300,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setHelpSquare(null);
       playSound('checkmate', soundEnabled);
 
+      if (gameMode === 'online') {
+        onlineManagerRef.current?.setGameOver();
+      }
+
       // Delay showing the game over modal card by 1.5s so the player can process the checkmate
       clearGameOverModalTimer();
       gameOverModalTimerRef.current = setTimeout(() => {
@@ -310,13 +317,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setWinner('draw');
       setGameOverReason(currentGame.isStalemate() ? 'stalemate' : 'draw');
       setIsGameOver(true);
+      if (gameMode === 'online') {
+        onlineManagerRef.current?.setGameOver();
+      }
       setShowGameOverModal(true);
       playSound('reset', soundEnabled);
       return true;
     }
 
     return false;
-  }, [soundEnabled, clearGameOverModalTimer]);
+  }, [soundEnabled, clearGameOverModalTimer, gameMode]);
 
   // Online Multiplayer Helpers
   const showOnlineToast = useCallback((msg: string, durationMs: number = 3000) => {
@@ -332,6 +342,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }
     const currentSidePref = sidePref || onlineHostSidePref;
     const currentTc = tc || onlineTcId;
+    setOnlineOpponentHasLeft(false);
+    setOnlineRematchState('none');
     const code = await onlineManagerRef.current.createRoom(currentSidePref, currentTc, existingCode);
     setOnlineRoomCode(code);
     setOnlinePhase('waiting');
@@ -350,6 +362,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       onlineManagerRef.current = new OnlineChessManager();
     }
     const clean = roomCode.trim().toUpperCase();
+    setOnlineOpponentHasLeft(false);
+    setOnlineRematchState('none');
     setOnlineRoomCode(clean);
     setOnlinePhase('joining');
     try {
@@ -413,6 +427,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         setShowOnlineQrModal(false);
         setShowOnlineGuideModal(false);
         setShowOnlineTcModal(false);
+        setShowGameOverModal(false);
+        clearGameOverModalTimer();
+        setOnlineRematchState('none');
+        setOnlineOpponentHasLeft(false);
 
         setOnlineMySide(mySide);
         setBoardOrientation(mySide === 'b' ? 'black' : 'white');
@@ -563,6 +581,29 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       onSettingsUpdated: (sidePref, tcId) => {
         setOnlineHostSidePref(sidePref);
         setOnlineTcId(tcId);
+      },
+      onRematchOfferReceived: () => {
+        setOnlineRematchState('offered_by_opponent');
+        showOnlineToast(t.onlineOpponentOfferedRematch, 5000);
+        playSound('move', soundEnabled);
+      },
+      onRematchAccepted: () => {
+        setOnlineRematchState('accepted');
+      },
+      onRematchDeclined: () => {
+        setOnlineRematchState('none');
+        showOnlineToast(t.onlineRematchDeclined, 4000);
+      },
+      onRematchCancelled: () => {
+        setOnlineRematchState('none');
+      },
+      onRematchStateChange: (state) => {
+        setOnlineRematchState(state);
+      },
+      onOpponentLeftRoom: () => {
+        setOnlineOpponentHasLeft(true);
+        setOnlineRematchState('none');
+        showOnlineToast(t.onlineOpponentLeftCannotRematch, 5000);
       },
     });
   }, [lang, soundEnabled, t, checkGameOverStatus, showOnlineToast]);
@@ -1673,13 +1714,66 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }
   }, [effectiveOnlineMySide, soundEnabled, clearGameOverModalTimer]);
 
+  const handleOnlineOfferRematch = useCallback(() => {
+    if (onlineOpponentHasLeft || onlineManagerRef.current?.hasOpponentLeft()) {
+      setOnlineOpponentHasLeft(true);
+      showOnlineToast(t.onlineOpponentLeftCannotRematch, 5000);
+      return;
+    }
+    if (onlineManagerRef.current?.isDisconnectGraceActive() || disconnectCountdown !== null || !onlineManagerRef.current?.isOpponentAvailableForRematch()) {
+      showOnlineToast(t.onlineCannotRematchOffline);
+      return;
+    }
+    const res = onlineManagerRef.current?.offerRematch();
+    if (res && !res.success) {
+      if (res.reason === 'left') {
+        setOnlineOpponentHasLeft(true);
+        showOnlineToast(t.onlineOpponentLeftCannotRematch, 5000);
+      } else {
+        showOnlineToast(t.onlineCannotRematchOffline);
+      }
+    }
+  }, [onlineOpponentHasLeft, disconnectCountdown, showOnlineToast, t.onlineCannotRematchOffline, t.onlineOpponentLeftCannotRematch]);
+
+  const handleOnlineAcceptRematch = useCallback(() => {
+    if (onlineOpponentHasLeft || onlineManagerRef.current?.hasOpponentLeft()) {
+      setOnlineOpponentHasLeft(true);
+      showOnlineToast(t.onlineOpponentLeftCannotRematch, 5000);
+      return;
+    }
+    if (onlineManagerRef.current?.isDisconnectGraceActive() || disconnectCountdown !== null || !onlineManagerRef.current?.isOpponentAvailableForRematch()) {
+      showOnlineToast(t.onlineCannotRematchOffline);
+      return;
+    }
+    const res = onlineManagerRef.current?.acceptRematch();
+    if (res && !res.success) {
+      if (res.reason === 'left') {
+        setOnlineOpponentHasLeft(true);
+        showOnlineToast(t.onlineOpponentLeftCannotRematch, 5000);
+      } else {
+        showOnlineToast(t.onlineCannotRematchOffline);
+      }
+    }
+  }, [onlineOpponentHasLeft, disconnectCountdown, showOnlineToast, t.onlineCannotRematchOffline, t.onlineOpponentLeftCannotRematch]);
+
+  const handleOnlineDeclineRematch = useCallback(() => {
+    onlineManagerRef.current?.declineRematch();
+  }, []);
+
+  const handleOnlineCancelRematch = useCallback(() => {
+    onlineManagerRef.current?.cancelRematch();
+  }, []);
+
   const handleOnlineNewGame = useCallback(async () => {
+    onlineManagerRef.current?.leaveRoom();
+    setOnlineOpponentHasLeft(false);
     clearGameOverModalTimer();
     setIsGameOver(false);
     setWinner(null);
     setDisconnectCountdown(null);
     setShowGameOverModal(false);
     setOnlineMySide(null);
+    setOnlineRematchState('none');
     setBoardOrientation('white');
     try {
       if (onlineRoomCode) {
@@ -1698,10 +1792,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
   const handlePlayAgain = useCallback(() => {
     clearGameOverModalTimer();
-    setShowGameOverModal(false);
     if (gameMode === 'online') {
-      handleOnlineNewGame();
+      handleOnlineOfferRematch();
     } else {
+      setShowGameOverModal(false);
       startNewGame({
         mode: gameMode,
         difficulty,
@@ -1709,7 +1803,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         timeControl,
       });
     }
-  }, [gameMode, difficulty, playerSide, timeControl, handleOnlineNewGame, startNewGame, clearGameOverModalTimer]);
+  }, [gameMode, difficulty, playerSide, timeControl, handleOnlineOfferRematch, startNewGame, clearGameOverModalTimer]);
 
   const difficultyDropdownNode = (
     <div className="relative z-50 inline-flex items-center gap-1.5 sm:gap-2" ref={difficultyDropdownRef}>
@@ -2062,6 +2156,37 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
                 </div>
               )}
 
+              {/* Interactive Rematch Offer Banner when reviewing board */}
+              {gameMode === 'online' && !showGameOverModal && isGameOver && onlineRematchState === 'offered_by_opponent' && !onlineOpponentHasLeft && (
+                <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-40 mx-auto max-w-md rounded-2xl bg-white/95 dark:bg-[#18181b]/95 border-2 border-emerald-500/80 dark:border-emerald-400/80 backdrop-blur-md p-3 sm:p-3.5 shadow-2xl text-center select-none animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0 text-left">
+                      <RefreshCw className="w-4 h-4 text-emerald-500 animate-spin shrink-0" />
+                      <span className="font-bold text-xs sm:text-sm text-[#171717] dark:text-white truncate">
+                        {t.onlineOpponentOfferedRematch}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleOnlineAcceptRematch}
+                        className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+                      >
+                        {t.onlineAcceptRematch}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOnlineDeclineRematch}
+                        title={t.onlineDeclineRematch}
+                        className="p-1.5 rounded-full border border-rose-200 dark:border-rose-900 bg-white dark:bg-[#18181b] text-rose-600 dark:text-rose-400 hover:bg-rose-50 text-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 15-Second Grace Period Disconnection Banner */}
               {gameMode === 'online' && onlinePhase === 'playing' && disconnectCountdown !== null && (
                 <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-40 mx-auto max-w-md rounded-2xl bg-white/95 dark:bg-[#18181b]/95 border-2 border-amber-500/70 dark:border-amber-400/70 backdrop-blur-md p-3.5 sm:p-4 shadow-2xl text-center select-none animate-in fade-in zoom-in-95 duration-200">
@@ -2242,6 +2367,13 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               onNewGame={handleOnlineNewGame}
               isGameOver={isGameOver}
               t={t}
+              onlineRematchState={onlineRematchState}
+              isOpponentDisconnected={onlineManagerRef.current?.isDisconnectGraceActive() || disconnectCountdown !== null}
+              opponentHasLeft={onlineOpponentHasLeft || onlineManagerRef.current?.hasOpponentLeft()}
+              onOfferRematch={handleOnlineOfferRematch}
+              onAcceptRematch={handleOnlineAcceptRematch}
+              onDeclineRematch={handleOnlineDeclineRematch}
+              onCancelRematch={handleOnlineCancelRematch}
             />
           ) : (
             <GameControls
@@ -2403,6 +2535,14 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           clearGameOverModalTimer();
           setShowGameOverModal(false);
         }}
+        onlineRematchState={onlineRematchState}
+        isOpponentDisconnected={onlineManagerRef.current?.isDisconnectGraceActive() || disconnectCountdown !== null}
+        opponentHasLeft={onlineOpponentHasLeft || onlineManagerRef.current?.hasOpponentLeft()}
+        onOfferRematch={handleOnlineOfferRematch}
+        onAcceptRematch={handleOnlineAcceptRematch}
+        onDeclineRematch={handleOnlineDeclineRematch}
+        onCancelRematch={handleOnlineCancelRematch}
+        onNewOnlineRoom={handleOnlineNewGame}
       />
 
       {/* Restart Confirm Dialog */}

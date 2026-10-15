@@ -42,6 +42,8 @@ export interface OnlineMatchSyncData {
   blackTimeRemaining?: number | null;
 }
 
+export type OnlineRematchState = 'none' | 'offered_by_me' | 'offered_by_opponent' | 'accepted';
+
 export type OnlineMessage =
   | { type: 'GUEST_JOIN'; guestId: string }
   | { type: 'HOST_READY'; roomCode: string }
@@ -51,6 +53,11 @@ export type OnlineMessage =
   | { type: 'RESIGN'; side: 'w' | 'b' }
   | { type: 'TIMEOUT'; side: 'w' | 'b' }
   | { type: 'REMATCH_OFFER' }
+  | { type: 'REMATCH_ACCEPT' }
+  | { type: 'REMATCH_DECLINE' }
+  | { type: 'REMATCH_CANCEL' }
+  | { type: 'REMATCH_START'; hostSide: 'w' | 'b'; guestSide: 'w' | 'b'; tcId: OnlineTimeControlId; fen: string }
+  | { type: 'PLAYER_LEFT' }
   | { type: 'PING'; ts: number }
   | { type: 'PONG'; ts: number }
   | { type: 'DISCONNECT_INTENT'; side: 'w' | 'b' }
@@ -83,6 +90,12 @@ export interface OnlineManagerEvents {
   onDisconnectForfeit?: (winnerSide: 'w' | 'b') => void;
   onSelfConnectionState?: (isOnline: boolean) => void;
   onSettingsUpdated?: (sidePref: HostSidePref, tcId: OnlineTimeControlId) => void;
+  onRematchOfferReceived?: () => void;
+  onRematchAccepted?: () => void;
+  onRematchDeclined?: () => void;
+  onRematchCancelled?: () => void;
+  onRematchStateChange?: (state: OnlineRematchState) => void;
+  onOpponentLeftRoom?: () => void;
   onError?: (err: string) => void;
   onStatusText?: (text: string) => void;
 }
@@ -107,6 +120,9 @@ export class OnlineChessManager {
   private mySide: 'w' | 'b' | null = null;
   private hostSidePref: HostSidePref = 'white';
   private tcId: OnlineTimeControlId = 'none';
+  private rematchState: OnlineRematchState = 'none';
+  private opponentHasLeft: boolean = false;
+  private hasOpponentJoined: boolean = false;
   private events: OnlineManagerEvents = {};
   private processedMsgIds: Set<string> = new Set();
 
@@ -178,6 +194,27 @@ export class OnlineChessManager {
 
   public isDisconnectGraceActive(): boolean {
     return this.isOpponentDisconnected;
+  }
+
+  public getRematchState(): OnlineRematchState {
+    return this.rematchState;
+  }
+
+  public isOpponentOnline(): boolean {
+    return !this.isOpponentDisconnected && !this.opponentHasLeft;
+  }
+
+  public hasOpponentLeft(): boolean {
+    return this.opponentHasLeft;
+  }
+
+  public isOpponentAvailableForRematch(): boolean {
+    if (this.opponentHasLeft) return false;
+    if (this.isOpponentDisconnected) return false;
+    if (this.connection && !this.connection.open && !this.broadcastChannel) {
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -301,13 +338,115 @@ export class OnlineChessManager {
   }
 
   /**
+   * Mark game as over locally
+   */
+  public setGameOver() {
+    this.phase = 'over';
+    this.stopHeartbeat();
+    this.events.onPhaseChange?.('over');
+  }
+
+  /**
+   * Propose a rematch to the opponent
+   */
+  public offerRematch(): { success: boolean; reason?: 'left' | 'disconnected' } {
+    if (this.opponentHasLeft) {
+      return { success: false, reason: 'left' };
+    }
+    if (this.isOpponentDisconnected || !this.isOpponentAvailableForRematch()) {
+      return { success: false, reason: 'disconnected' };
+    }
+    if (this.rematchState === 'offered_by_opponent') {
+      return this.acceptRematch();
+    }
+    this.rematchState = 'offered_by_me';
+    this.events.onRematchStateChange?.(this.rematchState);
+    this.broadcastMessage({ type: 'REMATCH_OFFER' });
+    return { success: true };
+  }
+
+  /**
+   * Accept an incoming rematch offer
+   */
+  public acceptRematch(): { success: boolean; reason?: 'left' | 'disconnected' } {
+    if (this.opponentHasLeft) {
+      return { success: false, reason: 'left' };
+    }
+    if (this.isOpponentDisconnected || !this.isOpponentAvailableForRematch()) {
+      return { success: false, reason: 'disconnected' };
+    }
+    this.rematchState = 'accepted';
+    this.events.onRematchStateChange?.(this.rematchState);
+
+    if (this.isHost) {
+      this.startRematchGame();
+    } else {
+      this.broadcastMessage({ type: 'REMATCH_ACCEPT' });
+    }
+    return { success: true };
+  }
+
+  /**
+   * Decline an incoming rematch offer
+   */
+  public declineRematch() {
+    this.rematchState = 'none';
+    this.events.onRematchStateChange?.(this.rematchState);
+    this.broadcastMessage({ type: 'REMATCH_DECLINE' });
+  }
+
+  /**
+   * Cancel an outgoing rematch offer
+   */
+  public cancelRematch() {
+    if (this.rematchState === 'offered_by_me') {
+      this.rematchState = 'none';
+      this.events.onRematchStateChange?.(this.rematchState);
+      this.broadcastMessage({ type: 'REMATCH_CANCEL' });
+    }
+  }
+
+  /**
+   * Host starts the rematch match with swapped sides
+   */
+  public startRematchGame() {
+    if (!this.isHost) return;
+    const prevHostSide = this.mySide || 'w';
+    const newHostSide: 'w' | 'b' = prevHostSide === 'w' ? 'b' : 'w';
+    const newGuestSide: 'w' | 'b' = newHostSide === 'w' ? 'b' : 'w';
+
+    this.mySide = newHostSide;
+    this.phase = 'playing';
+    this.rematchState = 'none';
+    this.isOpponentDisconnected = false;
+    this.disconnectSecondsRemaining = 15;
+    this.startHeartbeat();
+
+    const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+    this.events.onRematchStateChange?.('none');
+    this.events.onMatchStart?.(newHostSide, this.tcId);
+    this.events.onPhaseChange?.('playing');
+
+    this.broadcastMessage({
+      type: 'REMATCH_START',
+      hostSide: newHostSide,
+      guestSide: newGuestSide,
+      tcId: this.tcId,
+      fen: startFen,
+    });
+  }
+
+  /**
    * Cleanup and disconnect
    */
   public leaveRoom() {
+    this.broadcastMessage({ type: 'PLAYER_LEFT' });
     this.cleanup();
     this.phase = 'idle';
     this.mySide = null;
     this.roomCode = '';
+    this.rematchState = 'none';
     this.events.onPhaseChange?.('idle');
   }
 
@@ -356,6 +495,10 @@ export class OnlineChessManager {
     if (this.phase !== 'playing' || this.isOpponentDisconnected) return;
     this.isOpponentDisconnected = true;
     this.disconnectSecondsRemaining = 15;
+    if (this.rematchState !== 'none') {
+      this.rematchState = 'none';
+      this.events.onRematchStateChange?.('none');
+    }
 
     this.events.onOpponentDisconnected?.(15);
     this.events.onDisconnectCountdownTick?.(15);
@@ -375,6 +518,10 @@ export class OnlineChessManager {
         }
         this.phase = 'over';
         this.stopHeartbeat();
+        this.opponentHasLeft = true;
+        this.rematchState = 'none';
+        this.events.onRematchStateChange?.('none');
+        this.events.onOpponentLeftRoom?.();
         const winningSide = this.mySide || (this.isHost ? 'w' : 'b');
         this.events.onDisconnectForfeit?.(winningSide);
         this.broadcastMessage({
@@ -442,16 +589,19 @@ export class OnlineChessManager {
   }
 
   private handleWindowUnload = () => {
+    this.broadcastMessage({
+      type: 'PLAYER_LEFT',
+    });
     if (this.phase === 'playing') {
       this.broadcastMessage({
         type: 'DISCONNECT_INTENT',
         side: this.mySide || (this.isHost ? 'w' : 'b'),
       });
-      if (this.connection) {
-        try {
-          this.connection.close();
-        } catch (e) {}
-      }
+    }
+    if (this.connection) {
+      try {
+        this.connection.close();
+      } catch (e) {}
     }
   };
 
@@ -591,6 +741,11 @@ export class OnlineChessManager {
     conn.on('close', () => {
       if (this.phase === 'playing') {
         this.handleOpponentDisconnect();
+      } else if (this.phase === 'over') {
+        this.opponentHasLeft = true;
+        this.rematchState = 'none';
+        this.events.onRematchStateChange?.('none');
+        this.events.onOpponentLeftRoom?.();
       }
     });
 
@@ -598,6 +753,11 @@ export class OnlineChessManager {
       console.warn('Conn error:', err);
       if (this.phase === 'playing') {
         this.handleOpponentDisconnect();
+      } else if (this.phase === 'over') {
+        this.opponentHasLeft = true;
+        this.rematchState = 'none';
+        this.events.onRematchStateChange?.('none');
+        this.events.onOpponentLeftRoom?.();
       }
     });
 
@@ -608,8 +768,15 @@ export class OnlineChessManager {
           if (state === 'disconnected' || state === 'failed' || state === 'closed') {
             if (this.phase === 'playing') {
               this.handleOpponentDisconnect();
+            } else if (this.phase === 'over') {
+              this.opponentHasLeft = true;
+              this.rematchState = 'none';
+              this.events.onRematchStateChange?.('none');
+              this.events.onOpponentLeftRoom?.();
             }
           } else if (state === 'connected') {
+            this.opponentHasLeft = false;
+            this.hasOpponentJoined = true;
             if (this.phase === 'playing') {
               this.handleOpponentReconnect();
             }
@@ -669,6 +836,8 @@ export class OnlineChessManager {
 
     switch (msg.type) {
       case 'GUEST_JOIN': {
+        this.hasOpponentJoined = true;
+        this.opponentHasLeft = false;
         if (this.isHost && (this.phase === 'waiting' || this.phase === 'idle')) {
           // Determine side assignments
           let hostColor: 'w' | 'b' = 'w';
@@ -711,6 +880,8 @@ export class OnlineChessManager {
       }
 
       case 'HOST_WELCOME': {
+        this.hasOpponentJoined = true;
+        this.opponentHasLeft = false;
         if (!this.isHost && (this.phase === 'joining' || this.phase === 'waiting' || this.phase === 'idle')) {
           if (msg.guestSide === 'w' || msg.guestSide === 'b') {
             this.mySide = msg.guestSide;
@@ -796,6 +967,10 @@ export class OnlineChessManager {
       }
 
       case 'DISCONNECT_INTENT': {
+        this.opponentHasLeft = true;
+        this.rematchState = 'none';
+        this.events.onRematchStateChange?.('none');
+        this.events.onOpponentLeftRoom?.();
         if (this.phase === 'playing') {
           this.handleOpponentDisconnect();
         }
@@ -878,6 +1053,91 @@ export class OnlineChessManager {
         break;
       }
 
+      case 'REMATCH_OFFER': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        if (this.phase === 'over' || this.phase === 'playing') {
+          if (this.rematchState === 'offered_by_me') {
+            // Both offered rematch simultaneously
+            this.rematchState = 'accepted';
+            this.events.onRematchStateChange?.(this.rematchState);
+            if (this.isHost) {
+              this.startRematchGame();
+            } else {
+              this.broadcastMessage({ type: 'REMATCH_ACCEPT' });
+            }
+          } else {
+            this.rematchState = 'offered_by_opponent';
+            this.events.onRematchOfferReceived?.();
+            this.events.onRematchStateChange?.(this.rematchState);
+          }
+        }
+        break;
+      }
+
+      case 'REMATCH_ACCEPT': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        if (this.isHost) {
+          this.rematchState = 'accepted';
+          this.events.onRematchStateChange?.(this.rematchState);
+          this.startRematchGame();
+        }
+        break;
+      }
+
+      case 'REMATCH_START': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        if (!this.isHost) {
+          this.rematchState = 'none';
+          this.mySide = msg.guestSide;
+          if (msg.tcId && TIME_CONTROLS[msg.tcId]) {
+            this.tcId = msg.tcId;
+          }
+          this.phase = 'playing';
+          this.isOpponentDisconnected = false;
+          this.disconnectSecondsRemaining = 15;
+          this.startHeartbeat();
+          this.events.onRematchStateChange?.('none');
+          this.events.onMatchStart?.(this.mySide, this.tcId);
+          this.events.onPhaseChange?.('playing');
+        }
+        break;
+      }
+
+      case 'REMATCH_DECLINE': {
+        this.lastOpponentSeenAt = Date.now();
+        this.rematchState = 'none';
+        this.events.onRematchDeclined?.();
+        this.events.onRematchStateChange?.('none');
+        break;
+      }
+
+      case 'REMATCH_CANCEL': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.rematchState === 'offered_by_opponent') {
+          this.rematchState = 'none';
+          this.events.onRematchCancelled?.();
+          this.events.onRematchStateChange?.('none');
+        }
+        break;
+      }
+
+      case 'PLAYER_LEFT': {
+        this.opponentHasLeft = true;
+        this.rematchState = 'none';
+        this.events.onRematchStateChange?.('none');
+        this.events.onOpponentLeftRoom?.();
+        break;
+      }
+
       default:
         break;
     }
@@ -885,6 +1145,9 @@ export class OnlineChessManager {
 
   private cleanup() {
     this.stopHeartbeat();
+    this.rematchState = 'none';
+    this.opponentHasLeft = false;
+    this.hasOpponentJoined = false;
     if (this.hostPollInterval) {
       clearInterval(this.hostPollInterval);
       this.hostPollInterval = null;
