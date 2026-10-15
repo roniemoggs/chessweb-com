@@ -32,8 +32,19 @@ export interface OnlineMoveData {
   blackTimeRemaining?: number | null;
 }
 
+export interface OnlineMatchSyncData {
+  mySide: 'w' | 'b';
+  tcId: OnlineTimeControlId;
+  fen: string;
+  history?: string[];
+  lastMove?: { from: string; to: string } | null;
+  whiteTimeRemaining?: number | null;
+  blackTimeRemaining?: number | null;
+}
+
 export type OnlineMessage =
   | { type: 'GUEST_JOIN'; guestId: string }
+  | { type: 'HOST_READY'; roomCode: string }
   | { type: 'HOST_WELCOME'; hostSide: 'w' | 'b'; guestSide: 'w' | 'b'; tcId: OnlineTimeControlId; fen: string }
   | { type: 'SETTINGS_UPDATE'; hostSidePref: HostSidePref; tcId: OnlineTimeControlId }
   | { type: 'MOVE'; move: OnlineMoveData }
@@ -41,14 +52,36 @@ export type OnlineMessage =
   | { type: 'TIMEOUT'; side: 'w' | 'b' }
   | { type: 'REMATCH_OFFER' }
   | { type: 'PING'; ts: number }
-  | { type: 'PONG'; ts: number };
+  | { type: 'PONG'; ts: number }
+  | { type: 'DISCONNECT_INTENT'; side: 'w' | 'b' }
+  | { type: 'HEARTBEAT'; ts: number }
+  | { type: 'HEARTBEAT_ACK'; ts: number }
+  | { type: 'RECONNECT_REQUEST'; guestId?: string; side?: 'w' | 'b' }
+  | {
+      type: 'RECONNECT_ACK';
+      hostSide: 'w' | 'b';
+      guestSide: 'w' | 'b';
+      tcId: OnlineTimeControlId;
+      fen: string;
+      history?: string[];
+      lastMove?: { from: string; to: string } | null;
+      whiteTimeRemaining?: number | null;
+      blackTimeRemaining?: number | null;
+    }
+  | { type: 'DISCONNECT_FORFEIT'; winnerSide: 'w' | 'b' };
 
 export interface OnlineManagerEvents {
   onPhaseChange?: (phase: OnlinePhase) => void;
   onMatchStart?: (mySide: 'w' | 'b', tcId: OnlineTimeControlId) => void;
+  onMatchSync?: (data: OnlineMatchSyncData) => void;
   onMoveReceived?: (data: OnlineMoveData) => void;
   onOpponentResigned?: (resignedSide: 'w' | 'b') => void;
   onOpponentTimeout?: (timedOutSide: 'w' | 'b') => void;
+  onOpponentDisconnected?: (secondsRemaining: number) => void;
+  onOpponentReconnected?: () => void;
+  onDisconnectCountdownTick?: (secondsRemaining: number) => void;
+  onDisconnectForfeit?: (winnerSide: 'w' | 'b') => void;
+  onSelfConnectionState?: (isOnline: boolean) => void;
   onSettingsUpdated?: (sidePref: HostSidePref, tcId: OnlineTimeControlId) => void;
   onError?: (err: string) => void;
   onStatusText?: (text: string) => void;
@@ -77,12 +110,42 @@ export class OnlineChessManager {
   private events: OnlineManagerEvents = {};
   private processedMsgIds: Set<string> = new Set();
 
+  // 15-second grace period & heartbeat state
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private watchdogInterval: ReturnType<typeof setInterval> | null = null;
+  private disconnectTimer: ReturnType<typeof setInterval> | null = null;
+  private lastOpponentSeenAt: number = 0;
+  private isOpponentDisconnected: boolean = false;
+  private disconnectSecondsRemaining: number = 15;
+  private gameStateGetter: (() => {
+    fen: string;
+    history?: string[];
+    lastMove?: { from: string; to: string } | null;
+    whiteTimeRemaining?: number | null;
+    blackTimeRemaining?: number | null;
+  }) | null = null;
+  private hasBoundWindowEvents: boolean = false;
+  private hostPollInterval: ReturnType<typeof setInterval> | null = null;
+  private joinPollInterval: ReturnType<typeof setInterval> | null = null;
+
   constructor(events: OnlineManagerEvents = {}) {
     this.events = events;
   }
 
   public setEvents(events: OnlineManagerEvents) {
     this.events = { ...this.events, ...events };
+  }
+
+  public setGameStateGetter(
+    getter: () => {
+      fen: string;
+      history?: string[];
+      lastMove?: { from: string; to: string } | null;
+      whiteTimeRemaining?: number | null;
+      blackTimeRemaining?: number | null;
+    }
+  ) {
+    this.gameStateGetter = getter;
   }
 
   public getPhase(): OnlinePhase {
@@ -109,19 +172,45 @@ export class OnlineChessManager {
     return this.isHost;
   }
 
+  public getDisconnectSecondsRemaining(): number {
+    return this.disconnectSecondsRemaining;
+  }
+
+  public isDisconnectGraceActive(): boolean {
+    return this.isOpponentDisconnected;
+  }
+
   /**
    * Initializes host room
    */
-  public async createRoom(sidePref: HostSidePref = 'white', tcId: OnlineTimeControlId = 'none'): Promise<string> {
+  public async createRoom(
+    sidePref: HostSidePref = 'white',
+    tcId: OnlineTimeControlId = 'none',
+    existingCode?: string
+  ): Promise<string> {
     this.cleanup();
     this.isHost = true;
     this.hostSidePref = sidePref;
     this.tcId = tcId;
-    this.roomCode = generateCleanRoomCode();
+    this.roomCode = existingCode ? existingCode.trim().toUpperCase() : generateCleanRoomCode();
     this.phase = 'waiting';
     this.events.onPhaseChange?.('waiting');
 
+    this.bindWindowEvents();
     this.initBroadcastChannel(this.roomCode);
+
+    if (this.hostPollInterval) clearInterval(this.hostPollInterval);
+    this.hostPollInterval = setInterval(() => {
+      if (this.phase === 'waiting') {
+        this.broadcastMessage({ type: 'HOST_READY', roomCode: this.roomCode });
+      } else {
+        if (this.hostPollInterval) {
+          clearInterval(this.hostPollInterval);
+          this.hostPollInterval = null;
+        }
+      }
+    }, 1200);
+
     await this.initPeerAsHost(this.roomCode);
     return this.roomCode;
   }
@@ -139,7 +228,24 @@ export class OnlineChessManager {
     this.phase = 'joining';
     this.events.onPhaseChange?.('joining');
 
+    this.bindWindowEvents();
     this.initBroadcastChannel(cleanCode);
+
+    if (this.joinPollInterval) clearInterval(this.joinPollInterval);
+    this.joinPollInterval = setInterval(() => {
+      if (this.phase === 'joining') {
+        this.broadcastMessage({
+          type: 'GUEST_JOIN',
+          guestId: this.myId || 'tab_guest',
+        });
+      } else {
+        if (this.joinPollInterval) {
+          clearInterval(this.joinPollInterval);
+          this.joinPollInterval = null;
+        }
+      }
+    }, 1000);
+
     return this.initPeerAsGuest(cleanCode);
   }
 
@@ -173,6 +279,7 @@ export class OnlineChessManager {
    */
   public sendResign(side: 'w' | 'b') {
     this.phase = 'over';
+    this.stopHeartbeat();
     this.events.onPhaseChange?.('over');
     this.broadcastMessage({
       type: 'RESIGN',
@@ -185,6 +292,7 @@ export class OnlineChessManager {
    */
   public sendTimeout(side: 'w' | 'b') {
     this.phase = 'over';
+    this.stopHeartbeat();
     this.events.onPhaseChange?.('over');
     this.broadcastMessage({
       type: 'TIMEOUT',
@@ -203,6 +311,168 @@ export class OnlineChessManager {
     this.events.onPhaseChange?.('idle');
   }
 
+  /**
+   * Starts heartbeat ping and watchdog during active match
+   */
+  public startHeartbeat() {
+    this.stopHeartbeat();
+    this.lastOpponentSeenAt = Date.now();
+    this.isOpponentDisconnected = false;
+
+    // Heartbeat ping every 1.5s
+    this.heartbeatInterval = setInterval(() => {
+      if (this.phase === 'playing') {
+        this.broadcastMessage({ type: 'HEARTBEAT', ts: Date.now() });
+      }
+    }, 1500);
+
+    // Watchdog check every 1s
+    this.watchdogInterval = setInterval(() => {
+      if (this.phase === 'playing' && !this.isOpponentDisconnected) {
+        const elapsed = Date.now() - this.lastOpponentSeenAt;
+        // If no message or heartbeat seen for > 4.5 seconds:
+        if (elapsed > 4500) {
+          this.handleOpponentDisconnect();
+        }
+      }
+    }, 1000);
+  }
+
+  public stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    if (this.watchdogInterval) {
+      clearInterval(this.watchdogInterval);
+      this.watchdogInterval = null;
+    }
+  }
+
+  /**
+   * Triggers the 15-second countdown grace period when opponent disconnects
+   */
+  public handleOpponentDisconnect() {
+    if (this.phase !== 'playing' || this.isOpponentDisconnected) return;
+    this.isOpponentDisconnected = true;
+    this.disconnectSecondsRemaining = 15;
+
+    this.events.onOpponentDisconnected?.(15);
+    this.events.onDisconnectCountdownTick?.(15);
+
+    if (this.disconnectTimer) {
+      clearInterval(this.disconnectTimer);
+    }
+
+    this.disconnectTimer = setInterval(() => {
+      this.disconnectSecondsRemaining -= 1;
+      this.events.onDisconnectCountdownTick?.(this.disconnectSecondsRemaining);
+
+      if (this.disconnectSecondsRemaining <= 0) {
+        if (this.disconnectTimer) {
+          clearInterval(this.disconnectTimer);
+          this.disconnectTimer = null;
+        }
+        this.phase = 'over';
+        this.stopHeartbeat();
+        const winningSide = this.mySide || (this.isHost ? 'w' : 'b');
+        this.events.onDisconnectForfeit?.(winningSide);
+        this.broadcastMessage({
+          type: 'DISCONNECT_FORFEIT',
+          winnerSide: winningSide,
+        });
+      }
+    }, 1000);
+  }
+
+  /**
+   * Resumes the game normally if opponent reconnects before 15s countdown expires
+   */
+  public handleOpponentReconnect() {
+    this.lastOpponentSeenAt = Date.now();
+    const wasDisconnected = this.isOpponentDisconnected;
+    this.isOpponentDisconnected = false;
+
+    if (this.disconnectTimer) {
+      clearInterval(this.disconnectTimer);
+      this.disconnectTimer = null;
+    }
+
+    if (wasDisconnected) {
+      this.events.onOpponentReconnected?.();
+    }
+
+    // Sync latest game state to reconnected peer
+    if (this.gameStateGetter && this.phase === 'playing') {
+      const state = this.gameStateGetter();
+      if (state) {
+        const hostSide = this.isHost ? (this.mySide || 'w') : (this.mySide === 'w' ? 'b' : 'w');
+        const guestSide = hostSide === 'w' ? 'b' : 'w';
+        this.broadcastMessage({
+          type: 'RECONNECT_ACK',
+          hostSide,
+          guestSide,
+          tcId: this.tcId,
+          fen: state.fen,
+          history: state.history,
+          lastMove: state.lastMove,
+          whiteTimeRemaining: state.whiteTimeRemaining,
+          blackTimeRemaining: state.blackTimeRemaining,
+        });
+      }
+    }
+  }
+
+  private bindWindowEvents() {
+    if (typeof window === 'undefined' || this.hasBoundWindowEvents) return;
+    this.hasBoundWindowEvents = true;
+    window.addEventListener('beforeunload', this.handleWindowUnload);
+    window.addEventListener('pagehide', this.handleWindowUnload);
+    window.addEventListener('offline', this.handleWindowOffline);
+    window.addEventListener('online', this.handleWindowOnline);
+  }
+
+  private unbindWindowEvents() {
+    if (typeof window === 'undefined' || !this.hasBoundWindowEvents) return;
+    this.hasBoundWindowEvents = false;
+    window.removeEventListener('beforeunload', this.handleWindowUnload);
+    window.removeEventListener('pagehide', this.handleWindowUnload);
+    window.removeEventListener('offline', this.handleWindowOffline);
+    window.removeEventListener('online', this.handleWindowOnline);
+  }
+
+  private handleWindowUnload = () => {
+    if (this.phase === 'playing') {
+      this.broadcastMessage({
+        type: 'DISCONNECT_INTENT',
+        side: this.mySide || (this.isHost ? 'w' : 'b'),
+      });
+      if (this.connection) {
+        try {
+          this.connection.close();
+        } catch (e) {}
+      }
+    }
+  };
+
+  private handleWindowOffline = () => {
+    this.events.onSelfConnectionState?.(false);
+  };
+
+  private handleWindowOnline = () => {
+    this.events.onSelfConnectionState?.(true);
+    if (this.phase === 'playing') {
+      this.broadcastMessage({ type: 'HEARTBEAT', ts: Date.now() });
+      if (!this.isHost) {
+        this.broadcastMessage({
+          type: 'RECONNECT_REQUEST',
+          guestId: this.myId,
+          side: this.mySide || 'b',
+        });
+      }
+    }
+  };
+
   private initBroadcastChannel(code: string) {
     if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
     try {
@@ -214,11 +484,12 @@ export class OnlineChessManager {
       };
 
       if (!this.isHost) {
-        // Broadcast guest join immediately
+        // Broadcast guest join or reconnect
         setTimeout(() => {
           this.broadcastMessage({
-            type: 'GUEST_JOIN',
+            type: this.phase === 'playing' ? 'RECONNECT_REQUEST' : 'GUEST_JOIN',
             guestId: this.myId || 'tab_guest',
+            side: this.mySide || 'b',
           });
         }, 150);
       }
@@ -230,7 +501,8 @@ export class OnlineChessManager {
   private async initPeerAsHost(code: string): Promise<void> {
     if (typeof window === 'undefined') return;
     try {
-      const { default: PeerClass } = await import('peerjs');
+      const peerModule: any = await import('peerjs');
+      const PeerClass = peerModule.default || peerModule.Peer || peerModule;
       const hostPeerId = `cw-${code}-host`;
       this.myId = hostPeerId;
 
@@ -258,7 +530,8 @@ export class OnlineChessManager {
   private async initPeerAsGuest(code: string): Promise<boolean> {
     if (typeof window === 'undefined') return false;
     try {
-      const { default: PeerClass } = await import('peerjs');
+      const peerModule: any = await import('peerjs');
+      const PeerClass = peerModule.default || peerModule.Peer || peerModule;
       const hostPeerId = `cw-${code}-host`;
 
       this.peer = new PeerClass({
@@ -292,10 +565,22 @@ export class OnlineChessManager {
   private setupConnectionHandlers(conn: any) {
     conn.on('open', () => {
       if (!this.isHost) {
-        this.sendMessageDirect({
-          type: 'GUEST_JOIN',
-          guestId: this.myId,
-        });
+        if (this.phase === 'playing') {
+          this.sendMessageDirect({
+            type: 'RECONNECT_REQUEST',
+            guestId: this.myId,
+            side: this.mySide || 'b',
+          });
+        } else {
+          this.sendMessageDirect({
+            type: 'GUEST_JOIN',
+            guestId: this.myId,
+          });
+        }
+      } else {
+        if (this.phase === 'playing') {
+          this.handleOpponentReconnect();
+        }
       }
     });
 
@@ -304,12 +589,34 @@ export class OnlineChessManager {
     });
 
     conn.on('close', () => {
-      // Disconnection handled gracefully
+      if (this.phase === 'playing') {
+        this.handleOpponentDisconnect();
+      }
     });
 
     conn.on('error', (err: any) => {
       console.warn('Conn error:', err);
+      if (this.phase === 'playing') {
+        this.handleOpponentDisconnect();
+      }
     });
+
+    if (conn.peerConnection) {
+      try {
+        conn.peerConnection.addEventListener('connectionstatechange', () => {
+          const state = conn.peerConnection?.connectionState;
+          if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+            if (this.phase === 'playing') {
+              this.handleOpponentDisconnect();
+            }
+          } else if (state === 'connected') {
+            if (this.phase === 'playing') {
+              this.handleOpponentReconnect();
+            }
+          }
+        });
+      } catch (e) {}
+    }
   }
 
   private broadcastMessage(msg: OnlineMessage) {
@@ -344,7 +651,7 @@ export class OnlineChessManager {
   private handleIncomingRaw(data: any) {
     if (!data || typeof data !== 'object') return;
 
-    // Deduplicate messages across Peer & BroadcastChannel and prevent unbounded memory leak
+    // Deduplicate messages across Peer & BroadcastChannel
     if (data._msgId && typeof data._msgId === 'string') {
       if (this.processedMsgIds.has(data._msgId)) return;
       if (this.processedMsgIds.size >= 500) {
@@ -374,6 +681,7 @@ export class OnlineChessManager {
           const guestColor: 'w' | 'b' = hostColor === 'w' ? 'b' : 'w';
           this.mySide = hostColor;
           this.phase = 'playing';
+          this.startHeartbeat();
           this.events.onMatchStart?.(this.mySide, this.tcId);
           this.events.onPhaseChange?.('playing');
 
@@ -384,6 +692,19 @@ export class OnlineChessManager {
             guestSide: guestColor,
             tcId: this.tcId,
             fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          });
+        } else if (this.isHost && this.phase === 'playing') {
+          // Guest reconnected with GUEST_JOIN while match is in progress
+          this.handleOpponentReconnect();
+        }
+        break;
+      }
+
+      case 'HOST_READY': {
+        if (!this.isHost && (this.phase === 'joining' || this.phase === 'idle')) {
+          this.broadcastMessage({
+            type: 'GUEST_JOIN',
+            guestId: this.myId || 'tab_guest',
           });
         }
         break;
@@ -397,6 +718,7 @@ export class OnlineChessManager {
               this.tcId = msg.tcId;
             }
             this.phase = 'playing';
+            this.startHeartbeat();
             this.events.onMatchStart?.(this.mySide, this.tcId);
             this.events.onPhaseChange?.('playing');
           }
@@ -419,6 +741,10 @@ export class OnlineChessManager {
       }
 
       case 'MOVE': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
         if (
           msg.move &&
           typeof msg.move === 'object' &&
@@ -430,9 +756,10 @@ export class OnlineChessManager {
           const sanitizedMove: OnlineMoveData = {
             from: msg.move.from,
             to: msg.move.to,
-            promotion: typeof msg.move.promotion === 'string' && /^[qrbn]$/i.test(msg.move.promotion)
-              ? msg.move.promotion.toLowerCase()
-              : undefined,
+            promotion:
+              typeof msg.move.promotion === 'string' && /^[qrbn]$/i.test(msg.move.promotion)
+                ? msg.move.promotion.toLowerCase()
+                : undefined,
             fen: typeof msg.move.fen === 'string' ? msg.move.fen.slice(0, 128) : '',
             whiteTimeRemaining:
               typeof msg.move.whiteTimeRemaining === 'number' && Number.isFinite(msg.move.whiteTimeRemaining)
@@ -451,6 +778,7 @@ export class OnlineChessManager {
       case 'RESIGN': {
         if (msg.side === 'w' || msg.side === 'b') {
           this.phase = 'over';
+          this.stopHeartbeat();
           this.events.onPhaseChange?.('over');
           this.events.onOpponentResigned?.(msg.side);
         }
@@ -460,8 +788,77 @@ export class OnlineChessManager {
       case 'TIMEOUT': {
         if (msg.side === 'w' || msg.side === 'b') {
           this.phase = 'over';
+          this.stopHeartbeat();
           this.events.onPhaseChange?.('over');
           this.events.onOpponentTimeout?.(msg.side);
+        }
+        break;
+      }
+
+      case 'DISCONNECT_INTENT': {
+        if (this.phase === 'playing') {
+          this.handleOpponentDisconnect();
+        }
+        break;
+      }
+
+      case 'HEARTBEAT': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        this.broadcastMessage({ type: 'HEARTBEAT_ACK', ts: msg.ts });
+        break;
+      }
+
+      case 'HEARTBEAT_ACK': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        break;
+      }
+
+      case 'RECONNECT_REQUEST': {
+        if (this.phase === 'playing') {
+          this.handleOpponentReconnect();
+        }
+        break;
+      }
+
+      case 'RECONNECT_ACK': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        if (this.phase !== 'over') {
+          this.phase = 'playing';
+          this.startHeartbeat();
+          const mySide = this.isHost ? msg.hostSide : msg.guestSide;
+          this.mySide = mySide;
+          if (msg.tcId && TIME_CONTROLS[msg.tcId]) {
+            this.tcId = msg.tcId;
+          }
+          this.events.onPhaseChange?.('playing');
+          this.events.onMatchSync?.({
+            mySide,
+            tcId: this.tcId,
+            fen: msg.fen,
+            history: msg.history,
+            lastMove: msg.lastMove,
+            whiteTimeRemaining: msg.whiteTimeRemaining,
+            blackTimeRemaining: msg.blackTimeRemaining,
+          });
+        }
+        break;
+      }
+
+      case 'DISCONNECT_FORFEIT': {
+        if (this.phase === 'playing') {
+          this.phase = 'over';
+          this.stopHeartbeat();
+          this.events.onPhaseChange?.('over');
+          this.events.onDisconnectForfeit?.(msg.winnerSide);
         }
         break;
       }
@@ -473,12 +870,35 @@ export class OnlineChessManager {
         break;
       }
 
+      case 'PONG': {
+        this.lastOpponentSeenAt = Date.now();
+        if (this.isOpponentDisconnected) {
+          this.handleOpponentReconnect();
+        }
+        break;
+      }
+
       default:
         break;
     }
   }
 
   private cleanup() {
+    this.stopHeartbeat();
+    if (this.hostPollInterval) {
+      clearInterval(this.hostPollInterval);
+      this.hostPollInterval = null;
+    }
+    if (this.joinPollInterval) {
+      clearInterval(this.joinPollInterval);
+      this.joinPollInterval = null;
+    }
+    if (this.disconnectTimer) {
+      clearInterval(this.disconnectTimer);
+      this.disconnectTimer = null;
+    }
+    this.isOpponentDisconnected = false;
+    this.disconnectSecondsRemaining = 15;
     this.mySide = null;
     this.phase = 'idle';
     if (this.connection) {
@@ -500,5 +920,6 @@ export class OnlineChessManager {
       this.broadcastChannel = null;
     }
     this.processedMsgIds.clear();
+    this.unbindWindowEvents();
   }
 }

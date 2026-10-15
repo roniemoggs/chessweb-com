@@ -12,6 +12,8 @@ interface PlayerCardProps {
   isThinking?: boolean;
   isCheck?: boolean;
   isCheckmate?: boolean;
+  isDisconnected?: boolean;
+  disconnectCountdown?: number | null;
   difficultySelector?: React.ReactNode;
   timeControlSelector?: React.ReactNode;
   lang?: 'ja' | 'en';
@@ -42,6 +44,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   isThinking = false,
   isCheck = false,
   isCheckmate = false,
+  isDisconnected = false,
+  disconnectCountdown = null,
   difficultySelector,
   timeControlSelector,
   lang = 'ja',
@@ -120,6 +124,18 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
             ) : isCheck ? (
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white animate-bounce shrink-0">
                 {lang === 'ja' ? '王手!' : 'Check!'}
+              </span>
+            ) : isDisconnected ? (
+              <span
+                className="items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 animate-pulse shrink-0 inline-flex shadow-2xs"
+                title={lang === 'ja' ? '接続切断中（15秒猶予期間）' : 'Disconnected (15s grace period)'}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                <span>
+                  {lang === 'ja'
+                    ? `切断中 (${disconnectCountdown ?? 15}秒)`
+                    : `Disconnected (${disconnectCountdown ?? 15}s)`}
+                </span>
               </span>
             ) : null}
           </div>

@@ -211,6 +211,15 @@ export interface GameTranslations {
   onlineTcSuddenDeath: string;
   onlineTcIncrement: string;
   onlineTcIncrementDesc: string;
+  onlineOpponentDisconnected: string;
+  onlineWaitingReconnect: string;
+  onlineDisconnectWarning: string;
+  onlineSelfDisconnectedTitle: string;
+  onlineSelfDisconnectedDesc: string;
+  onlineOpponentReconnected: string;
+  onlineWonByDisconnect: string;
+  onlineLostByDisconnect: string;
+  onlineDisconnectReason: string;
 }
 
 export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
@@ -403,6 +412,15 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineTcSuddenDeath: '切れ負け',
     onlineTcIncrement: 'インクリメント',
     onlineTcIncrementDesc: '1手ごとに増える',
+    onlineOpponentDisconnected: '相手の通信が切断されました',
+    onlineWaitingReconnect: '再接続を待機中（残り {seconds} 秒）',
+    onlineDisconnectWarning: '15秒以内に再接続されない場合、あなたの不戦勝となります',
+    onlineSelfDisconnectedTitle: '通信が切断されました',
+    onlineSelfDisconnectedDesc: '15秒以内に再接続してください。再接続されない場合、不戦敗となります',
+    onlineOpponentReconnected: '相手が再接続しました！ 対局を再開します',
+    onlineWonByDisconnect: '相手の通信が切断されたため、不戦勝となりました',
+    onlineLostByDisconnect: '通信が切断されたため、不戦敗となりました',
+    onlineDisconnectReason: '通信切断（不戦勝）',
   },
   en: {
     appTitle: 'Chess Web',
@@ -593,6 +611,15 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineTcSuddenDeath: 'Sudden Death',
     onlineTcIncrement: 'Increment',
     onlineTcIncrementDesc: '+ per move',
+    onlineOpponentDisconnected: 'Opponent Disconnected',
+    onlineWaitingReconnect: 'Waiting for opponent to reconnect ({seconds}s left)',
+    onlineDisconnectWarning: 'You will win by forfeit if opponent does not reconnect within 15 seconds.',
+    onlineSelfDisconnectedTitle: 'Connection Lost',
+    onlineSelfDisconnectedDesc: 'Please reconnect within 15 seconds to avoid forfeiting.',
+    onlineOpponentReconnected: 'Opponent reconnected! Game resumed.',
+    onlineWonByDisconnect: 'Opponent disconnected. You won by abandonment.',
+    onlineLostByDisconnect: 'Lost by disconnection (abandonment).',
+    onlineDisconnectReason: 'Abandonment',
   },
 };
 

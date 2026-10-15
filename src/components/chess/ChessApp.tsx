@@ -95,6 +95,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [onlineTcId, setOnlineTcId] = useState<OnlineTimeControlId>('none');
   const [onlineMySide, setOnlineMySide] = useState<'w' | 'b' | null>(null);
   const [onlineToastNotice, setOnlineToastNotice] = useState<string | null>(null);
+  const [disconnectCountdown, setDisconnectCountdown] = useState<number | null>(null);
+  const [isSelfDisconnected, setIsSelfDisconnected] = useState<boolean>(false);
 
   // Effective online side determination to avoid null/mismatched side logic
   const effectiveOnlineMySide: 'w' | 'b' = useMemo(() => {
@@ -124,6 +126,15 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [showOnlineTcModal, setShowOnlineTcModal] = useState<boolean>(false);
   const [showOnlineResignModal, setShowOnlineResignModal] = useState<boolean>(false);
 
+  // Automatically close pre-match modals (like QR Code or Time Control) instantly once match is connected and playing
+  useEffect(() => {
+    if (onlinePhase === 'playing') {
+      setShowOnlineQrModal(false);
+      setShowOnlineTcModal(false);
+      setShowOnlineGuideModal(false);
+    }
+  }, [onlinePhase]);
+
   // Timer states (in seconds)
   const [whiteTime, setWhiteTime] = useState<number | null>(null);
   const [blackTime, setBlackTime] = useState<number | null>(null);
@@ -148,6 +159,21 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [showGameOverModal, setShowGameOverModal] = useState<boolean>(false);
   const [showResignConfirm, setShowResignConfirm] = useState<boolean>(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState<boolean>(false);
+  const gameOverModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearGameOverModalTimer = useCallback(() => {
+    if (gameOverModalTimerRef.current) {
+      clearTimeout(gameOverModalTimerRef.current);
+      gameOverModalTimerRef.current = null;
+    }
+  }, []);
+
+  // Cleanup pending game over modal timer on unmount
+  useEffect(() => {
+    return () => {
+      clearGameOverModalTimer();
+    };
+  }, [clearGameOverModalTimer]);
 
   // Lock body scroll for inline confirm modals
   useLockBodyScroll(showRestartConfirm || showResignConfirm);
@@ -266,8 +292,17 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setWinner(winningColor);
       setGameOverReason('checkmate');
       setIsGameOver(true);
-      setShowGameOverModal(true);
+      setHintArrow(null);
+      setSelectedSquare(null);
+      setHelpSquare(null);
       playSound('checkmate', soundEnabled);
+
+      // Delay showing the game over modal card by 1.5s so the player can process the checkmate
+      clearGameOverModalTimer();
+      gameOverModalTimerRef.current = setTimeout(() => {
+        setShowGameOverModal(true);
+        gameOverModalTimerRef.current = null;
+      }, 1500);
       return true;
     }
 
@@ -281,7 +316,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }
 
     return false;
-  }, [soundEnabled]);
+  }, [soundEnabled, clearGameOverModalTimer]);
 
   // Online Multiplayer Helpers
   const showOnlineToast = useCallback((msg: string, durationMs: number = 3000) => {
@@ -291,24 +326,39 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }, durationMs);
   }, []);
 
-  const handleStartOnlineHost = useCallback(async (sidePref?: HostSidePref, tc?: OnlineTimeControlId) => {
+  const handleStartOnlineHost = useCallback(async (sidePref?: HostSidePref, tc?: OnlineTimeControlId, existingCode?: string) => {
     if (!onlineManagerRef.current) {
       onlineManagerRef.current = new OnlineChessManager();
     }
     const currentSidePref = sidePref || onlineHostSidePref;
     const currentTc = tc || onlineTcId;
-    const code = await onlineManagerRef.current.createRoom(currentSidePref, currentTc);
+    const code = await onlineManagerRef.current.createRoom(currentSidePref, currentTc, existingCode);
     setOnlineRoomCode(code);
     setOnlinePhase('waiting');
+    try {
+      sessionStorage.setItem(`chess_online_session_${code}`, JSON.stringify({
+        roomCode: code,
+        isHost: true,
+        hostSidePref: currentSidePref,
+        tcId: currentTc,
+      }));
+    } catch (e) {}
   }, [onlineHostSidePref, onlineTcId]);
 
   const handleJoinOnlineRoom = useCallback(async (roomCode: string) => {
     if (!onlineManagerRef.current) {
       onlineManagerRef.current = new OnlineChessManager();
     }
-    setOnlineRoomCode(roomCode);
+    const clean = roomCode.trim().toUpperCase();
+    setOnlineRoomCode(clean);
     setOnlinePhase('joining');
-    await onlineManagerRef.current.joinRoom(roomCode);
+    try {
+      sessionStorage.setItem(`chess_online_session_${clean}`, JSON.stringify({
+        roomCode: clean,
+        isHost: false,
+      }));
+    } catch (e) {}
+    await onlineManagerRef.current.joinRoom(clean);
   }, []);
 
   const handleHostSidePrefChange = useCallback((side: HostSidePref) => {
@@ -331,6 +381,19 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     return `${window.location.origin}${prefix}/online?room=${onlineRoomCode}`;
   }, [onlineRoomCode, lang]);
 
+  // Keep manager aware of latest game state for automatic reconnection sync
+  useEffect(() => {
+    if (onlineManagerRef.current) {
+      onlineManagerRef.current.setGameStateGetter(() => ({
+        fen: game.fen(),
+        history: history,
+        lastMove: lastMove,
+        whiteTimeRemaining: whiteTime,
+        blackTimeRemaining: blackTime,
+      }));
+    }
+  }, [game, history, lastMove, whiteTime, blackTime]);
+
   // Setup Online Manager Event Listeners
   useEffect(() => {
     if (!onlineManagerRef.current) {
@@ -340,10 +403,20 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     onlineManagerRef.current.setEvents({
       onPhaseChange: (phase) => {
         setOnlinePhase(phase);
+        if (phase === 'playing') {
+          setShowOnlineQrModal(false);
+          setShowOnlineGuideModal(false);
+          setShowOnlineTcModal(false);
+        }
       },
       onMatchStart: (mySide, tcId) => {
+        setShowOnlineQrModal(false);
+        setShowOnlineGuideModal(false);
+        setShowOnlineTcModal(false);
+
         setOnlineMySide(mySide);
         setBoardOrientation(mySide === 'b' ? 'black' : 'white');
+        setDisconnectCountdown(null);
 
         const initSec = TIME_CONTROLS[tcId]?.initialSeconds || 0;
         setWhiteTime(initSec > 0 ? initSec : null);
@@ -379,14 +452,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               setHistory(nextGame.history());
               setLastMove({ from: moveData.from as Square, to: moveData.to as Square });
 
-              if (moveRes.captured) {
-                playSound('capture', soundEnabled);
-              } else if (nextGame.inCheck()) {
-                playSound('check', soundEnabled);
-              } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
-                playSound('castle', soundEnabled);
-              } else {
-                playSound('move', soundEnabled);
+              if (!nextGame.isCheckmate()) {
+                if (moveRes.captured) {
+                  playSound('capture', soundEnabled);
+                } else if (nextGame.inCheck()) {
+                  playSound('check', soundEnabled);
+                } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+                  playSound('castle', soundEnabled);
+                } else {
+                  playSound('move', soundEnabled);
+                }
               }
 
               checkGameOverStatus(nextGame);
@@ -404,7 +479,73 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           setBlackTime(moveData.blackTimeRemaining);
         }
       },
+      onOpponentDisconnected: (secondsRemaining) => {
+        setDisconnectCountdown(secondsRemaining);
+      },
+      onOpponentReconnected: () => {
+        setDisconnectCountdown(null);
+        showOnlineToast(t.onlineOpponentReconnected, 4000);
+        playSound('reset', soundEnabled);
+      },
+      onDisconnectCountdownTick: (secondsRemaining) => {
+        setDisconnectCountdown(secondsRemaining);
+      },
+      onDisconnectForfeit: (winnerSide) => {
+        setDisconnectCountdown(null);
+        setIsGameOver(true);
+        setWinner(winnerSide);
+        setGameOverReason('abandonment');
+        setShowGameOverModal(true);
+        playSound('checkmate', soundEnabled);
+      },
+      onSelfConnectionState: (isOnline) => {
+        setIsSelfDisconnected(!isOnline);
+        if (!isOnline) {
+          setDisconnectCountdown(15);
+        } else {
+          setDisconnectCountdown(null);
+        }
+      },
+      onMatchSync: (syncData) => {
+        setDisconnectCountdown(null);
+        setOnlineMySide(syncData.mySide);
+        setBoardOrientation(syncData.mySide === 'b' ? 'black' : 'white');
+        setOnlineTcId(syncData.tcId);
+
+        const freshGame = new Chess();
+        if (syncData.history && syncData.history.length > 0) {
+          for (const m of syncData.history) {
+            try {
+              freshGame.move(m);
+            } catch (e) {
+              break;
+            }
+          }
+        } else if (syncData.fen) {
+          try {
+            freshGame.load(syncData.fen);
+          } catch (e) {}
+        }
+        setGame(freshGame);
+        setGameFen(freshGame.fen());
+        setHistory(freshGame.history());
+        if (syncData.lastMove) {
+          setLastMove({
+            from: syncData.lastMove.from as Square,
+            to: syncData.lastMove.to as Square,
+          });
+        }
+        if (syncData.whiteTimeRemaining !== undefined && syncData.whiteTimeRemaining !== null) {
+          setWhiteTime(syncData.whiteTimeRemaining);
+        }
+        if (syncData.blackTimeRemaining !== undefined && syncData.blackTimeRemaining !== null) {
+          setBlackTime(syncData.blackTimeRemaining);
+        }
+        showOnlineToast(t.onlineOpponentReconnected, 3500);
+        playSound('reset', soundEnabled);
+      },
       onOpponentResigned: (resignedSide) => {
+        setDisconnectCountdown(null);
         setIsGameOver(true);
         setWinner(resignedSide === 'w' ? 'b' : 'w');
         setGameOverReason('resignation');
@@ -412,6 +553,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         playSound('checkmate', soundEnabled);
       },
       onOpponentTimeout: (timedOutSide) => {
+        setDisconnectCountdown(null);
         setIsGameOver(true);
         setWinner(timedOutSide === 'w' ? 'b' : 'w');
         setGameOverReason('timeout');
@@ -438,7 +580,20 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       if (/^[A-Z0-9]{3,16}$/.test(cleanRoom)) {
         hasInitializedOnlineRef.current = true;
         setGameMode('online');
-        handleJoinOnlineRoom(cleanRoom);
+        let wasHost = false;
+        try {
+          const saved = sessionStorage.getItem(`chess_online_session_${cleanRoom}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.isHost) wasHost = true;
+          }
+        } catch (e) {}
+
+        if (wasHost) {
+          handleStartOnlineHost(undefined, undefined, cleanRoom);
+        } else {
+          handleJoinOnlineRoom(cleanRoom);
+        }
       }
     } else if (initialMode === 'online' || modeParam === 'online') {
       hasInitializedOnlineRef.current = true;
@@ -451,7 +606,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   useEffect(() => {
     if (isGameOver) return;
     if (gameMode === 'online') {
-      if (onlinePhase !== 'playing' || onlineTcId === 'none') return;
+      if (onlinePhase !== 'playing' || onlineTcId === 'none' || disconnectCountdown !== null) return;
     } else {
       if (timeControl === 'unlimited') return;
     }
@@ -496,7 +651,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [game, gameFen, isGameOver, gameMode, onlinePhase, onlineTcId, timeControl, soundEnabled]);
+  }, [game, gameFen, isGameOver, gameMode, onlinePhase, onlineTcId, timeControl, soundEnabled, disconnectCountdown]);
 
   // AI Automatic Response Move Trigger
   useEffect(() => {
@@ -533,14 +688,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               setLastMove({ from, to });
 
               // Play appropriate sound
-              if (moveRes.captured) {
-                playSound('capture', soundEnabled);
-              } else if (nextGame.inCheck()) {
-                playSound('check', soundEnabled);
-              } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
-                playSound('castle', soundEnabled);
-              } else {
-                playSound('move', soundEnabled);
+              if (!nextGame.isCheckmate()) {
+                if (moveRes.captured) {
+                  playSound('capture', soundEnabled);
+                } else if (nextGame.inCheck()) {
+                  playSound('check', soundEnabled);
+                } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+                  playSound('castle', soundEnabled);
+                } else {
+                  playSound('move', soundEnabled);
+                }
               }
 
               // Evaluate new position for bar
@@ -593,14 +750,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         setHelpSquare(null);
         setLastMove({ from: item.from, to: item.to });
 
-        if (moveRes.captured) {
-          playSound('capture', soundEnabled);
-        } else if (nextGame.inCheck()) {
-          playSound('check', soundEnabled);
-        } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
-          playSound('castle', soundEnabled);
-        } else {
-          playSound('move', soundEnabled);
+        if (!nextGame.isCheckmate()) {
+          if (moveRes.captured) {
+            playSound('capture', soundEnabled);
+          } else if (nextGame.inCheck()) {
+            playSound('check', soundEnabled);
+          } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+            playSound('castle', soundEnabled);
+          } else {
+            playSound('move', soundEnabled);
+          }
         }
 
         checkGameOverStatus(nextGame);
@@ -753,14 +912,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         });
 
         // Sound effects
-        if (moveRes.captured) {
-          playSound('capture', soundEnabled);
-        } else if (nextGame.inCheck()) {
-          playSound('check', soundEnabled);
-        } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
-          playSound('castle', soundEnabled);
-        } else {
-          playSound('move', soundEnabled);
+        if (!nextGame.isCheckmate()) {
+          if (moveRes.captured) {
+            playSound('capture', soundEnabled);
+          } else if (nextGame.inCheck()) {
+            playSound('check', soundEnabled);
+          } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+            playSound('castle', soundEnabled);
+          } else {
+            playSound('move', soundEnabled);
+          }
         }
 
 
@@ -857,14 +1018,16 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
             });
 
             // Sound effects
-            if (moveRes.captured) {
-              playSound('capture', soundEnabled);
-            } else if (nextGame.inCheck()) {
-              playSound('check', soundEnabled);
-            } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
-              playSound('castle', soundEnabled);
-            } else {
-              playSound('move', soundEnabled);
+            if (!nextGame.isCheckmate()) {
+              if (moveRes.captured) {
+                playSound('capture', soundEnabled);
+              } else if (nextGame.inCheck()) {
+                playSound('check', soundEnabled);
+              } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+                playSound('castle', soundEnabled);
+              } else {
+                playSound('move', soundEnabled);
+              }
             }
 
 
@@ -1186,6 +1349,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setWhiteTime(initSeconds);
       setBlackTime(initSeconds);
 
+      clearGameOverModalTimer();
       setIsGameOver(false);
       setWinner(null);
       setHintArrow(null);
@@ -1200,12 +1364,13 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setShowResignConfirm(false);
       playSound('reset', soundEnabled);
     },
-    [soundEnabled]
+    [soundEnabled, clearGameOverModalTimer]
   );
 
   // Resign
   const handleResign = useCallback(() => {
     if (isGameOver) return;
+    clearGameOverModalTimer();
     const opponent = playerSide === 'w' ? 'b' : 'w';
     setWinner(gameMode === 'ai' ? opponent : game.turn() === 'w' ? 'b' : 'w');
     setGameOverReason('resignation');
@@ -1213,7 +1378,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     setShowGameOverModal(true);
     setShowResignConfirm(false);
     playSound('reset', soundEnabled);
-  }, [isGameOver, playerSide, gameMode, game, soundEnabled]);
+  }, [isGameOver, playerSide, gameMode, game, soundEnabled, clearGameOverModalTimer]);
 
   // Rotate pieces 180° when it's the top player's turn if piece rotation is enabled
   const isPiecesRotated =
@@ -1402,6 +1567,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         return;
       }
       if (mode === gameMode) return;
+      clearGameOverModalTimer();
+      setShowGameOverModal(false);
 
       if (mode === 'practice') {
         setGameMode('practice');
@@ -1490,12 +1657,13 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         playSound('reset', soundEnabled);
       }
     },
-    [gameMode, playerSide, timeControl, soundEnabled, onlinePhase, handleStartOnlineHost]
+    [gameMode, playerSide, timeControl, soundEnabled, onlinePhase, handleStartOnlineHost, clearGameOverModalTimer]
   );
 
   const handleOnlineResignConfirm = useCallback(() => {
     setShowOnlineResignModal(false);
     if (effectiveOnlineMySide) {
+      clearGameOverModalTimer();
       onlineManagerRef.current?.sendResign(effectiveOnlineMySide);
       setIsGameOver(true);
       setWinner(effectiveOnlineMySide === 'w' ? 'b' : 'w');
@@ -1503,14 +1671,21 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setShowGameOverModal(true);
       playSound('checkmate', soundEnabled);
     }
-  }, [effectiveOnlineMySide, soundEnabled]);
+  }, [effectiveOnlineMySide, soundEnabled, clearGameOverModalTimer]);
 
   const handleOnlineNewGame = useCallback(async () => {
+    clearGameOverModalTimer();
     setIsGameOver(false);
     setWinner(null);
+    setDisconnectCountdown(null);
     setShowGameOverModal(false);
     setOnlineMySide(null);
     setBoardOrientation('white');
+    try {
+      if (onlineRoomCode) {
+        sessionStorage.removeItem(`chess_online_session_${onlineRoomCode}`);
+      }
+    } catch (e) {}
     const freshGame = new Chess();
     setGame(freshGame);
     setGameFen(freshGame.fen());
@@ -1519,9 +1694,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     setSelectedSquare(null);
     setHelpSquare(null);
     await handleStartOnlineHost();
-  }, [handleStartOnlineHost]);
+  }, [handleStartOnlineHost, clearGameOverModalTimer, onlineRoomCode]);
 
   const handlePlayAgain = useCallback(() => {
+    clearGameOverModalTimer();
     setShowGameOverModal(false);
     if (gameMode === 'online') {
       handleOnlineNewGame();
@@ -1533,7 +1709,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         timeControl,
       });
     }
-  }, [gameMode, difficulty, playerSide, timeControl, handleOnlineNewGame, startNewGame]);
+  }, [gameMode, difficulty, playerSide, timeControl, handleOnlineNewGame, startNewGame, clearGameOverModalTimer]);
 
   const difficultyDropdownNode = (
     <div className="relative z-50 inline-flex items-center gap-1.5 sm:gap-2" ref={difficultyDropdownRef}>
@@ -1842,6 +2018,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
                 isThinking={topIsAi && isAiThinking}
                 isCheck={game.turn() === topColor && game.inCheck() && !game.isCheckmate() && !(isGameOver && gameOverReason === 'checkmate')}
                 isCheckmate={game.turn() === topColor && (game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))}
+                isDisconnected={gameMode === 'online' && onlinePhase === 'playing' && disconnectCountdown !== null && topColor !== effectiveOnlineMySide}
+                disconnectCountdown={disconnectCountdown}
                 difficultySelector={topIsAi ? difficultyDropdownNode : undefined}
                 timeControlSelector={
                   gameMode === 'pvp'
@@ -1881,6 +2059,37 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               {onlineToastNotice && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full bg-[#171717]/95 dark:bg-white/95 text-white dark:text-[#171717] backdrop-blur-md text-xs font-semibold shadow-lg border border-white/10 dark:border-black/10 animate-in fade-in zoom-in-95 duration-200 pointer-events-none select-none text-center whitespace-nowrap">
                   {onlineToastNotice}
+                </div>
+              )}
+
+              {/* 15-Second Grace Period Disconnection Banner */}
+              {gameMode === 'online' && onlinePhase === 'playing' && disconnectCountdown !== null && (
+                <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-40 mx-auto max-w-md rounded-2xl bg-white/95 dark:bg-[#18181b]/95 border-2 border-amber-500/70 dark:border-amber-400/70 backdrop-blur-md p-3.5 sm:p-4 shadow-2xl text-center select-none animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="relative flex h-3 w-3 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
+                      </span>
+                      <span className="font-extrabold text-xs sm:text-sm text-[#171717] dark:text-white truncate">
+                        {isSelfDisconnected ? t.onlineSelfDisconnectedTitle : t.onlineOpponentDisconnected}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 text-white font-mono font-extrabold text-xs shadow-xs shrink-0">
+                      <Clock className="w-3 h-3" />
+                      <span>{disconnectCountdown}s</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-[#52525b] dark:text-[#a1a1aa] leading-relaxed text-left sm:text-center">
+                    {isSelfDisconnected ? t.onlineSelfDisconnectedDesc : t.onlineDisconnectWarning}
+                  </p>
+                  {/* Visual countdown progress bar */}
+                  <div className="w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden mt-2.5">
+                    <div
+                      className="h-full bg-amber-500 transition-all duration-1000 ease-linear rounded-full"
+                      style={{ width: `${Math.max(0, Math.min(100, (disconnectCountdown / 15) * 100))}%` }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -2006,6 +2215,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
             isThinking={bottomIsAi && isAiThinking}
             isCheck={game.turn() === bottomColor && game.inCheck() && !game.isCheckmate() && !(isGameOver && gameOverReason === 'checkmate')}
             isCheckmate={game.turn() === bottomColor && (game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))}
+            isDisconnected={gameMode === 'online' && onlinePhase === 'playing' && disconnectCountdown !== null && (bottomColor !== effectiveOnlineMySide || (isSelfDisconnected && bottomColor === effectiveOnlineMySide))}
+            disconnectCountdown={disconnectCountdown}
             difficultySelector={bottomIsAi ? difficultyDropdownNode : undefined}
             timeControlSelector={
               gameMode === 'ai' && !bottomIsAi
@@ -2188,7 +2399,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         gameMode={gameMode}
         moveCount={history.length}
         onPlayAgain={handlePlayAgain}
-        onClose={() => setShowGameOverModal(false)}
+        onClose={() => {
+          clearGameOverModalTimer();
+          setShowGameOverModal(false);
+        }}
       />
 
       {/* Restart Confirm Dialog */}
@@ -2248,20 +2462,20 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
       {/* Online Modals */}
       <OnlineGuideModal
-        isOpen={showOnlineGuideModal}
+        isOpen={showOnlineGuideModal && onlinePhase !== 'playing'}
         onClose={() => setShowOnlineGuideModal(false)}
         t={t}
       />
 
       <OnlineQrModal
-        isOpen={showOnlineQrModal}
+        isOpen={showOnlineQrModal && onlinePhase !== 'playing'}
         onClose={() => setShowOnlineQrModal(false)}
         inviteUrl={onlineInviteUrl}
         t={t}
       />
 
       <OnlineTimeControlModal
-        isOpen={showOnlineTcModal}
+        isOpen={showOnlineTcModal && onlinePhase !== 'playing'}
         onClose={() => setShowOnlineTcModal(false)}
         selectedTc={onlineTcId}
         onSelectTc={handleOnlineTcSelect}

@@ -3,7 +3,7 @@ import { Trophy, RefreshCw, Eye } from 'lucide-react';
 import type { GameTranslations } from './gameTranslations';
 import { useLockBodyScroll } from './useLockBodyScroll';
 
-export type GameOverReason = 'checkmate' | 'stalemate' | 'draw' | 'timeout' | 'resignation';
+export type GameOverReason = 'checkmate' | 'stalemate' | 'draw' | 'timeout' | 'resignation' | 'abandonment';
 
 interface GameOverModalProps {
   t: GameTranslations;
@@ -48,6 +48,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
       description = isPlayerWon ? '相手が投了しました' : '投了しました';
     } else if (reason === 'timeout') {
       description = isPlayerWon ? '相手の持ち時間が切れました' : '持ち時間が切れました';
+    } else if (reason === 'abandonment') {
+      description = isPlayerWon ? t.onlineWonByDisconnect : t.onlineLostByDisconnect;
     } else {
       description = isPlayerWon ? t.winPlayer : t.winAi;
     }
@@ -133,6 +135,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
                 ? t.resignation
                 : reason === 'timeout'
                 ? t.timeout
+                : reason === 'abandonment'
+                ? t.onlineDisconnectReason
                 : t.draw}
             </span>
           </div>

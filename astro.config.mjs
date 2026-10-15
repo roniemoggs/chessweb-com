@@ -83,7 +83,7 @@ export default defineConfig({
       dedupe: ['react', 'react-dom'],
     },
     optimizeDeps: {
-      include: ['chess.js', 'react-chessboard', 'lucide-react', 'qrcode'],
+      include: ['chess.js', 'react-chessboard', 'lucide-react', 'qrcode', 'peerjs'],
     },
   },
   i18n: {
