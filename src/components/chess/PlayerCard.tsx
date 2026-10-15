@@ -58,7 +58,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
   return (
     <div
-      className={`relative z-30 w-full flex items-center justify-between px-3 sm:px-4 py-2.5 rounded-2xl border transition-all duration-200 select-none ${
+      className={`relative z-30 w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 min-h-[58px] sm:min-h-[64px] rounded-2xl border transition-all duration-200 select-none ${
         isCurrentTurn
           ? 'bg-white dark:bg-[#18181b] border-[#171717]/30 dark:border-white/30 shadow-md ring-1 ring-[#171717]/10 dark:ring-white/10'
           : 'bg-[#fafafa] dark:bg-[#121214] border-[#ebebeb] dark:border-[#27272a] opacity-90'
@@ -68,7 +68,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Avatar */}
         <div
-          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+          className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border transition-all ${
             color === 'w'
               ? 'bg-[#ffffff] text-[#171717] border-[#ebebeb] dark:border-[#3f3f46] shadow-sm'
               : 'bg-[#171717] text-[#ffffff] border-[#171717] dark:bg-[#18181b] dark:text-[#ffffff] dark:border-[#3f3f46]'
@@ -79,31 +79,46 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
           ) : (
             <User className="w-5 h-5" />
           )}
+
+          {/* AI Thinking pulsing status badge on avatar */}
+          {isAi && isThinking && (
+            <span
+              className="absolute -top-0.5 -right-0.5 flex h-3 w-3"
+              title={lang === 'ja' ? 'AI思考中' : 'AI Thinking...'}
+            >
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white dark:border-[#18181b]" />
+            </span>
+          )}
         </div>
 
         {/* Name & Captured Pieces */}
         <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-sm sm:text-base text-[#171717] dark:text-[#ededed] truncate">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap overflow-hidden">
+            <span className="font-bold text-sm sm:text-base text-[#171717] dark:text-[#ededed] truncate shrink min-w-0">
               {name}
             </span>
-            <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[#71717a] dark:text-[#a1a1aa]">
+            <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[#71717a] dark:text-[#a1a1aa] shrink-0">
               {color === 'w' ? (lang === 'ja' ? '白' : 'White') : (lang === 'ja' ? '黒' : 'Black')}
             </span>
-            {difficultySelector}
-            {timeControlSelector}
+            {difficultySelector && <div className="shrink-0">{difficultySelector}</div>}
+            {timeControlSelector && <div className="shrink-0">{timeControlSelector}</div>}
             {isCurrentTurn && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#171717] text-white dark:bg-white dark:text-[#171717]">
+              <span
+                className={`items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#171717] text-white dark:bg-white dark:text-[#171717] shrink-0 ${
+                  isAi && isThinking ? 'hidden sm:inline-flex' : 'inline-flex'
+                }`}
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 {isThinking ? (lang === 'ja' ? '思考中' : 'Thinking...') : (lang === 'ja' ? '手番' : 'Turn')}
               </span>
             )}
             {isCheckmate ? (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-xs">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-xs shrink-0">
                 {lang === 'ja' ? 'チェックメイト' : 'Checkmate'}
               </span>
             ) : isCheck ? (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white animate-bounce">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white animate-bounce shrink-0">
                 {lang === 'ja' ? '王手!' : 'Check!'}
               </span>
             ) : null}

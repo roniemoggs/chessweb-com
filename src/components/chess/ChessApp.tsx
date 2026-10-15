@@ -1536,8 +1536,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   }, [gameMode, difficulty, playerSide, timeControl, handleOnlineNewGame, startNewGame]);
 
   const difficultyDropdownNode = (
-    <div className="relative z-50 inline-flex items-center gap-2" ref={difficultyDropdownRef}>
-      <span className="text-sm sm:text-base font-serif font-bold text-[#3f3f46] dark:text-[#e4e4e7] select-none tracking-tight">
+    <div className="relative z-50 inline-flex items-center gap-1.5 sm:gap-2" ref={difficultyDropdownRef}>
+      <span className="hidden sm:inline text-sm sm:text-base font-serif font-bold text-[#3f3f46] dark:text-[#e4e4e7] select-none tracking-tight">
         {lang === 'ja' ? '難易度:' : 'Difficulty:'}
       </span>
       <button
@@ -1548,12 +1548,12 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         }}
         aria-haspopup="listbox"
         aria-expanded={isDifficultyDropdownOpen}
-        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#18181b] hover:bg-[#fafaf9] dark:hover:bg-[#27272a] border border-[#d4d4d8] dark:border-[#3f3f46] hover:border-[#a1a1aa] dark:hover:border-[#71717a] text-[#18181b] dark:text-[#fafafa] text-sm sm:text-base font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
+        className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-white dark:bg-[#18181b] hover:bg-[#fafaf9] dark:hover:bg-[#27272a] border border-[#d4d4d8] dark:border-[#3f3f46] hover:border-[#a1a1aa] dark:hover:border-[#71717a] text-[#18181b] dark:text-[#fafafa] text-xs sm:text-base font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
         title={lang === 'ja' ? '難易度を選択' : 'Select difficulty'}
       >
         <span className="font-serif sm:font-sans">{getDifficultyLabel(difficulty)}</span>
         <ChevronDown
-          className={`w-4 h-4 text-[#71717a] dark:text-[#a1a1aa] transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#71717a] dark:text-[#a1a1aa] transition-transform duration-200 ${
             isDifficultyDropdownOpen ? 'rotate-180' : ''
           }`}
         />
@@ -1655,7 +1655,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
   const timeControlDropdownNode = (
     <div className="relative z-50 inline-flex items-center gap-1.5 sm:gap-2" ref={timeControlDropdownRef}>
-      <span className="text-xs sm:text-base font-serif font-bold text-[#3f3f46] dark:text-[#e4e4e7] select-none tracking-tight">
+      <span className="hidden sm:inline text-xs sm:text-base font-serif font-bold text-[#3f3f46] dark:text-[#e4e4e7] select-none tracking-tight">
         {lang === 'ja' ? '持ち時間:' : 'Time:'}
       </span>
       <button
@@ -1666,7 +1666,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         }}
         aria-haspopup="listbox"
         aria-expanded={isCardTcDropdownOpen}
-        className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-white dark:bg-[#18181b] hover:bg-[#fafaf9] dark:hover:bg-[#27272a] border border-[#d4d4d8] dark:border-[#3f3f46] hover:border-[#a1a1aa] dark:hover:border-[#71717a] text-[#18181b] dark:text-[#fafafa] text-xs sm:text-base font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
+        className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-white dark:bg-[#18181b] hover:bg-[#fafaf9] dark:hover:bg-[#27272a] border border-[#d4d4d8] dark:border-[#3f3f46] hover:border-[#a1a1aa] dark:hover:border-[#71717a] text-[#18181b] dark:text-[#fafafa] text-xs sm:text-base font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
         title={lang === 'ja' ? '対局の持ち時間を設定・変更' : 'Change time control'}
       >
         <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
