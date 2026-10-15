@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, RefreshCw, Eye, Loader2, X, Plus } from 'lucide-react';
+import { Trophy, RefreshCw, Eye, Loader2, X, Plus, Zap } from 'lucide-react';
 import type { GameTranslations } from './gameTranslations';
 import type { OnlineRematchState } from '../../lib/onlineChessManager';
 import { useLockBodyScroll } from './useLockBodyScroll';
@@ -24,6 +24,7 @@ interface GameOverModalProps {
   onDeclineRematch?: () => void;
   onCancelRematch?: () => void;
   onNewOnlineRoom?: () => void;
+  onFindNewOpponent?: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -44,6 +45,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   onDeclineRematch,
   onCancelRematch,
   onNewOnlineRoom,
+  onFindNewOpponent,
 }) => {
   useLockBodyScroll(isOpen);
 
@@ -279,7 +281,16 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
                     <Eye className="w-3.5 h-3.5" />
                     <span>{t.reviewBoard}</span>
                   </button>
-                  {onNewOnlineRoom && (
+                  {onFindNewOpponent ? (
+                    <button
+                      type="button"
+                      onClick={onFindNewOpponent}
+                      className="flex-1 py-2.5 px-3 rounded-full bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 fill-current" />
+                      <span>{t.quickMatchFindNewOpponent}</span>
+                    </button>
+                  ) : onNewOnlineRoom ? (
                     <button
                       type="button"
                       onClick={onNewOnlineRoom}
@@ -288,7 +299,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
                       <Plus className="w-3.5 h-3.5" />
                       <span>{t.onlineCreateNewRoom}</span>
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </>
             )}

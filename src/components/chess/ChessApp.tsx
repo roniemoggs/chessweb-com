@@ -24,6 +24,11 @@ import {
   TIME_CONTROLS,
 } from '../../lib/onlineChessManager';
 import { OnlineCard } from './OnlineCard';
+import {
+  MatchmakingService,
+  type QuickMatchTimeControl,
+  type MatchData,
+} from '../../lib/matchmakingService';
 import { OnlineGuideModal } from './OnlineGuideModal';
 import { OnlineQrModal } from './OnlineQrModal';
 import { OnlineTimeControlModal } from './OnlineTimeControlModal';
@@ -100,6 +105,13 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [isSelfDisconnected, setIsSelfDisconnected] = useState<boolean>(false);
   const [onlineRematchState, setOnlineRematchState] = useState<OnlineRematchState>('none');
   const [onlineOpponentHasLeft, setOnlineOpponentHasLeft] = useState<boolean>(false);
+
+  // Quick Match State
+  const matchmakingServiceRef = useRef<MatchmakingService | null>(null);
+  const [onlineSubTab, setOnlineSubTab] = useState<'quick' | 'friend'>('quick');
+  const [isSearchingQuickMatch, setIsSearchingQuickMatch] = useState<boolean>(false);
+  const [quickMatchElapsedSeconds, setQuickMatchElapsedSeconds] = useState<number>(0);
+  const [quickMatchTc, setQuickMatchTc] = useState<QuickMatchTimeControl>('5+0');
 
   // Effective online side determination to avoid null/mismatched side logic
   const effectiveOnlineMySide: 'w' | 'b' = useMemo(() => {
@@ -395,6 +407,67 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     return `${window.location.origin}${prefix}/online?room=${onlineRoomCode}`;
   }, [onlineRoomCode, lang]);
 
+  const handleCancelQuickMatch = useCallback(() => {
+    matchmakingServiceRef.current?.cancelMatchmaking();
+    setIsSearchingQuickMatch(false);
+  }, []);
+
+  const handleStartQuickMatch = useCallback(
+    (selectedTc: QuickMatchTimeControl = '5+0') => {
+      if (!matchmakingServiceRef.current && typeof window !== 'undefined') {
+        matchmakingServiceRef.current = new MatchmakingService();
+      }
+      onlineManagerRef.current?.leaveRoom();
+      setOnlineRoomCode('');
+      setOnlinePhase('idle');
+      setIsSearchingQuickMatch(true);
+      setQuickMatchElapsedSeconds(0);
+      setQuickMatchTc(selectedTc);
+
+      matchmakingServiceRef.current?.startMatchmaking(selectedTc, {
+        onWaiting: (elapsed) => {
+          setQuickMatchElapsedSeconds(elapsed);
+        },
+        onMatched: async (matchData: MatchData) => {
+          setIsSearchingQuickMatch(false);
+          showOnlineToast(t.quickMatchFound, 4000);
+          playSound('reset', soundEnabled);
+
+          const mappedTc = matchData.timeControl as OnlineTimeControlId;
+          setOnlineTcId(mappedTc);
+
+          if (matchData.role === 'host') {
+            const sidePref: HostSidePref = matchData.mySide === 'w' ? 'white' : 'black';
+            await handleStartOnlineHost(sidePref, mappedTc, matchData.roomCode);
+          } else {
+            setOnlineMySide(matchData.mySide);
+            setBoardOrientation(matchData.mySide === 'b' ? 'black' : 'white');
+            setTimeout(async () => {
+              await handleJoinOnlineRoom(matchData.roomCode);
+            }, 700);
+          }
+        },
+        onTimeout: () => {
+          setIsSearchingQuickMatch(false);
+          showOnlineToast(
+            lang === 'ja'
+              ? '待機中のプレイヤーが見つかりませんでした。再度探すか、友達招待をお試しください。'
+              : 'No available opponent found yet. Try searching again or invite a friend!',
+            6000
+          );
+        },
+        onError: (err) => {
+          setIsSearchingQuickMatch(false);
+          showOnlineToast(err, 4000);
+        },
+        onCancelled: () => {
+          setIsSearchingQuickMatch(false);
+        },
+      });
+    },
+    [handleStartOnlineHost, handleJoinOnlineRoom, showOnlineToast, t, soundEnabled, lang]
+  );
+
   // Keep manager aware of latest game state for automatic reconnection sync
   useEffect(() => {
     if (onlineManagerRef.current) {
@@ -630,6 +703,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           }
         } catch (e) {}
 
+        setOnlineSubTab('friend');
         if (wasHost) {
           handleStartOnlineHost(undefined, undefined, cleanRoom);
         } else {
@@ -639,9 +713,17 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     } else if (initialMode === 'online' || modeParam === 'online') {
       hasInitializedOnlineRef.current = true;
       setGameMode('online');
-      handleStartOnlineHost();
+      setOnlineSubTab('quick');
+      setOnlinePhase('idle');
     }
   }, [initialMode, handleJoinOnlineRoom, handleStartOnlineHost]);
+
+  // Clean up any ongoing quick match search on unmount
+  useEffect(() => {
+    return () => {
+      matchmakingServiceRef.current?.cancelMatchmaking();
+    };
+  }, []);
 
   // Clocks / Timers effect
   useEffect(() => {
@@ -1602,9 +1684,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       if (mode === 'online') {
         setGameMode('online');
         setIsAiThinking(false);
-        if (onlinePhase === 'idle') {
-          handleStartOnlineHost();
-        }
+        setOnlineSubTab('quick');
         return;
       }
       if (mode === gameMode) return;
@@ -2093,6 +2173,19 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           onOpenQr={() => setShowOnlineQrModal(true)}
           t={t}
           lang={lang}
+          activeTab={onlineSubTab}
+          onTabChange={(tab) => {
+            setOnlineSubTab(tab);
+            if (tab === 'friend' && !onlineRoomCode) {
+              handleStartOnlineHost();
+            }
+          }}
+          isSearchingQuickMatch={isSearchingQuickMatch}
+          quickMatchElapsedSeconds={quickMatchElapsedSeconds}
+          quickMatchTc={quickMatchTc}
+          onStartQuickMatch={handleStartQuickMatch}
+          onCancelQuickMatch={handleCancelQuickMatch}
+          onPlayAiWhileWaiting={() => handleModeSelect('ai')}
         />
       ) : (
         /* Main Game Layout: Grid of Board and Side Panel */
@@ -2543,6 +2636,14 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         onDeclineRematch={handleOnlineDeclineRematch}
         onCancelRematch={handleOnlineCancelRematch}
         onNewOnlineRoom={handleOnlineNewGame}
+        onFindNewOpponent={() => {
+          setShowGameOverModal(false);
+          clearGameOverModalTimer();
+          onlineManagerRef.current?.leaveRoom();
+          setOnlinePhase('idle');
+          setOnlineSubTab('quick');
+          handleStartQuickMatch(quickMatchTc);
+        }}
       />
 
       {/* Restart Confirm Dialog */}

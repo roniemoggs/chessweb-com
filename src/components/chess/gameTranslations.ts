@@ -233,6 +233,25 @@ export interface GameTranslations {
   onlineRematchStarted: string;
   onlineCannotRematchOffline: string;
   onlineOpponentLeftCannotRematch: string;
+
+  // Quick Match translations
+  quickMatchTab: string;
+  friendMatchTab: string;
+  quickMatchTitle: string;
+  quickMatchDesc: string;
+  quickMatchSearching: string;
+  quickMatchSearchingDesc: string;
+  quickMatchElapsed: string;
+  quickMatchCancel: string;
+  quickMatchFound: string;
+  quickMatchStartBtn: string;
+  quickMatchTcLabel: string;
+  quickMatchPresetAny: string;
+  quickMatchPreset3m: string;
+  quickMatchPreset5m: string;
+  quickMatchPreset10m: string;
+  quickMatchPlayAiWhileWaiting: string;
+  quickMatchFindNewOpponent: string;
 }
 
 export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
@@ -447,6 +466,25 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineRematchStarted: '🎯 再戦開始！ あなたは{side}',
     onlineCannotRematchOffline: '相手がオフラインのため再戦できません',
     onlineOpponentLeftCannotRematch: '対戦相手が退室したため、再戦できません。',
+
+    // Quick Match translations
+    quickMatchTab: '⚡ クイック対戦 (ランダム)',
+    friendMatchTab: '👥 友達と対戦 (ルーム)',
+    quickMatchTitle: 'オンライン対戦 (ランダムマッチ)',
+    quickMatchDesc: '世界中のオンラインプレイヤーとランダムで即座に対局を開始します。',
+    quickMatchSearching: '対戦相手を探しています...',
+    quickMatchSearchingDesc: '同じ持ち時間のプレイヤーをマッチング中...',
+    quickMatchElapsed: '経過',
+    quickMatchCancel: '検索をキャンセル',
+    quickMatchFound: '対戦相手が見つかりました！対局を開始します...',
+    quickMatchStartBtn: '対戦相手を探す',
+    quickMatchTcLabel: '持ち時間を選択:',
+    quickMatchPresetAny: 'いつでも (最速マッチ)',
+    quickMatchPreset3m: '3分 (ブリッツ)',
+    quickMatchPreset5m: '5分 (ブリッツ)',
+    quickMatchPreset10m: '10分 (ラピッド)',
+    quickMatchPlayAiWhileWaiting: '待機中にAIと対局する',
+    quickMatchFindNewOpponent: '別の対戦相手を探す',
   },
   en: {
     appTitle: 'Chess Web',
@@ -659,6 +697,25 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     onlineRematchStarted: '🎯 Rematch started! You play {side}',
     onlineCannotRematchOffline: 'Cannot rematch: opponent is offline',
     onlineOpponentLeftCannotRematch: 'Your opponent has left the game and is no longer available for a rematch.',
+
+    // Quick Match translations
+    quickMatchTab: '⚡ Quick Match (Random)',
+    friendMatchTab: '👥 Play with Friend (Room)',
+    quickMatchTitle: 'Play Online (Random Opponent)',
+    quickMatchDesc: 'Instantly pair and play against a random online player.',
+    quickMatchSearching: 'Searching for opponent...',
+    quickMatchSearchingDesc: 'Matching with an available player...',
+    quickMatchElapsed: 'elapsed',
+    quickMatchCancel: 'Cancel Search',
+    quickMatchFound: 'Opponent found! Starting match...',
+    quickMatchStartBtn: 'Find Opponent',
+    quickMatchTcLabel: 'Select Time Control:',
+    quickMatchPresetAny: 'Any (Fastest Match)',
+    quickMatchPreset3m: '3 min (Blitz)',
+    quickMatchPreset5m: '5 min (Blitz)',
+    quickMatchPreset10m: '10 min (Rapid)',
+    quickMatchPlayAiWhileWaiting: 'Play vs Computer while waiting',
+    quickMatchFindNewOpponent: 'Find New Opponent',
   },
 };
 
