@@ -119,6 +119,15 @@ export class MatchmakingService {
       const elapsed = Math.floor((Date.now() - this.searchStartTime) / 1000);
       this.callbacks.onWaiting?.(elapsed, this.currentTicketId);
 
+      // Timeout after 60 seconds of waiting without match
+      if (elapsed >= 60) {
+        this.stopPolling();
+        this.isSearching = false;
+        this.cancelMatchmaking();
+        this.callbacks.onTimeout?.();
+        return;
+      }
+
       try {
         const res = await fetch('/api/matchmake', {
           method: 'POST',

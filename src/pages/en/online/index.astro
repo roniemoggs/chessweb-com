@@ -4,8 +4,8 @@ import ChessApp from '../../../components/chess/ChessApp';
 import { useTranslations } from '../../../i18n/utils';
 
 const t = useTranslations('en');
-const title = 'Online Chess - Play with Friends | Chess Web';
-const description = 'Free online chess. Play chess in your browser with a friend by sharing an invitation link or QR code. No registration or app download needed. Customizable time controls including Rapid & Blitz.';
+const title = 'Online Chess - Random Matchmaking & Friend Play | Chess Web';
+const description = 'Free online chess. Pair up with random online players instantly in Quick Match, or play with friends by sharing a room link or QR code. No registration needed. Supports 3 min, 5 min Blitz, and 10 min Rapid.';
 ---
 
 <Layout lang="en" title={title} description={description}>
@@ -14,13 +14,13 @@ const description = 'Free online chess. Play chess in your browser with a friend
     <div class="max-w-3xl mx-auto space-y-3">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[11px] font-medium text-[#4d4d4d] dark:text-[#a1a1aa] shadow-2xs">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Instant Multiplayer • No Registration Needed</span>
+        <span>Instant Multiplayer • Random Matchmaking & Private Rooms</span>
       </div>
       <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
-        Online Chess - Play with Friends
+        Online Chess - Play Random Opponents & Friends
       </h1>
       <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">
-        Copy your match link or have your friend scan the QR code to start playing live chess directly in your browser.
+        Hit "Find Opponent" to instantly play with a random player online, or create a private room to share with a friend.
       </p>
     </div>
   </section>

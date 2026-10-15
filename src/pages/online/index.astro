@@ -4,8 +4,8 @@ import ChessApp from '../../components/chess/ChessApp';
 import { useTranslations } from '../../i18n/utils';
 
 const t = useTranslations('ja');
-const title = 'オンラインチェス - 友達と2人で対戦 | チェスWeb';
-const description = '無料のオンラインチェス。招待URLかQRコードを送るだけで、離れた友達と2人でチェス対戦ができます。登録・アプリ不要。持ち時間設定では、ラピッドやブリッツなどのカスタマイズも可能です。';
+const title = 'オンラインチェス - ランダム対戦＆友達対戦 | チェスWeb';
+const description = '無料のオンラインチェス。世界中のプレイヤーと即座に対戦できるクイック対戦（ランダムマッチ）や、招待URL・QRコードで友達と2人プレイできるルーム対戦が楽しめます。登録不要・3分/5分ブリッツ、10分ラピッド対応。';
 ---
 
 <Layout lang="ja" title={title} description={description}>
@@ -14,13 +14,13 @@ const description = '無料のオンラインチェス。招待URLかQRコード
     <div class="max-w-3xl mx-auto space-y-3">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#18181b] border border-[#ebebeb] dark:border-[#27272a] text-[11px] font-medium text-[#4d4d4d] dark:text-[#a1a1aa] shadow-2xs">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>登録・アプリ不要のオンライン対戦</span>
+        <span>登録・アプリ不要 • ランダム対戦＆友達対戦</span>
       </div>
       <h1 class="text-3xl sm:text-5xl font-extrabold text-[#171717] dark:text-white tracking-tight leading-tight">
-        オンラインチェス - 友達と2人で対戦
+        オンラインチェス - ランダム対戦＆友達対戦
       </h1>
       <p class="text-sm sm:text-base text-[#4d4d4d] dark:text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">
-        招待URLをコピーするか、QRコードを読み取ってもらうだけで、すぐに友達とリアルタイム対戦を始められます。
+        今すぐ「対戦相手を探す」を押してランダムマッチを開始するか、部屋番号・QRコードを共有して友達と対局できます。
       </p>
     </div>
   </section>
