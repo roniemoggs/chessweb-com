@@ -71,7 +71,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border transition-all ${
             color === 'w'
               ? 'bg-[#ffffff] text-[#171717] border-[#ebebeb] dark:border-[#3f3f46] shadow-sm'
-              : 'bg-[#171717] text-[#ffffff] border-[#171717] dark:bg-white dark:text-[#171717]'
+              : 'bg-[#171717] text-[#ffffff] border-[#171717] dark:bg-[#18181b] dark:text-[#ffffff] dark:border-[#3f3f46]'
           }`}
         >
           {isAi ? (
@@ -86,6 +86,9 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-sm sm:text-base text-[#171717] dark:text-[#ededed] truncate">
               {name}
+            </span>
+            <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[#71717a] dark:text-[#a1a1aa]">
+              {color === 'w' ? (lang === 'ja' ? '白' : 'White') : (lang === 'ja' ? '黒' : 'Black')}
             </span>
             {difficultySelector}
             {timeControlSelector}

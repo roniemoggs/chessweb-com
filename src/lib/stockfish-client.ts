@@ -43,7 +43,10 @@ export interface EngineEvalResult {
     numericScore: number;
     scoreType: string;
     rawScore: number;
+    depth?: number;
   };
+  depth?: number;
+  isBook?: boolean;
 }
 
 export interface EvaluateOptions {
@@ -248,7 +251,12 @@ class StockfishClient {
     // Sort by MultiPV rank order (#1, #2, #3, ...)
     validEntries.sort((a, b) => a.multiPvIndex - b.multiPvIndex);
 
-    const best = this.activeBookResult
+    const isBook = !!this.activeBookResult;
+    const currentDepth = isBook
+      ? 99
+      : (moveEntries.length > 0 ? Math.max(...moveEntries.map(e => e.depth || 0)) : 0);
+
+    const best = isBook
       ? this.activeBookResult.best
       : validEntries.slice(0, this.activeLimit).map((m, i) => ({ ...m, rank: i + 1 }));
 
@@ -257,23 +265,25 @@ class StockfishClient {
       : [];
 
     const topMove = best[0];
-    const positionEval = this.activeBookResult
-      ? this.activeBookResult.positionEval
+    const positionEval = isBook
+      ? { ...this.activeBookResult.positionEval, depth: 99 }
       : (topMove ? {
           scoreStr: topMove.scoreStr,
           evalWhiteStr: topMove.evalWhiteStr,
           numericScore: topMove.numericScore,
           scoreType: topMove.scoreType,
-          rawScore: topMove.rawScore
+          rawScore: topMove.rawScore,
+          depth: currentDepth,
         } : {
           scoreStr: '0.00',
           evalWhiteStr: '0.00',
           numericScore: 0,
           scoreType: 'cp',
-          rawScore: 0
+          rawScore: 0,
+          depth: currentDepth,
         });
 
-    return { best, worst, positionEval };
+    return { best, worst, positionEval, depth: currentDepth, isBook };
   }
 
   private triggerProgress() {
@@ -337,20 +347,16 @@ class StockfishClient {
 
           const existing = this.activeAllMoves[multiPvIndex];
           if (!existing || lineDepth >= existing.depth) {
-            let numericScore = 0;
-            if (scoreType === 'mate') {
-              numericScore = scoreVal > 0 ? 100000 - scoreVal : -100000 - scoreVal;
-            } else {
-              numericScore = scoreVal;
-            }
-
             const activeColor = this.activeFen.split(' ')[1] || 'w';
+            let numericScore = 0;
             let evalWhiteStr = '';
             if (scoreType === 'mate') {
               const whiteMate = activeColor === 'b' ? -scoreVal : scoreVal;
               evalWhiteStr = whiteMate > 0 ? `#M${whiteMate}` : whiteMate < 0 ? `-#M${Math.abs(whiteMate)}` : '#M0';
+              numericScore = whiteMate > 0 ? 100000 - whiteMate : -100000 - Math.abs(whiteMate);
             } else {
               const whiteCp = activeColor === 'b' ? -scoreVal : scoreVal;
+              numericScore = whiteCp;
               const val = whiteCp / 100;
               evalWhiteStr = val > 0 ? `+${val.toFixed(2)}` : val.toFixed(2);
             }

@@ -14,7 +14,7 @@ import { getGameTranslations } from './gameTranslations';
 import { ChessPiece } from './ChessPiece';
 import { PieceInfoModal, type PieceType } from './PieceInfoModal';
 import { TimeControlInfoModal, type TimeControlTopic } from './TimeControlInfoModal';
-import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock } from 'lucide-react';
+import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock, Sparkles } from 'lucide-react';
 import {
   OnlineChessManager,
   type OnlinePhase,
@@ -29,6 +29,8 @@ import { OnlineTimeControlModal } from './OnlineTimeControlModal';
 import { OnlineResignModal } from './OnlineResignModal';
 import { OnlineBoardControls } from './OnlineBoardControls';
 import { useLockBodyScroll } from './useLockBodyScroll';
+import { PracticeArrowsOverlay, type PracticeMoveOverlayItem } from './PracticeArrowsOverlay';
+import { PracticeModePanel } from './PracticeModePanel';
 
 const PIECE_VALUES: Record<string, number> = {
   p: 1,
@@ -55,7 +57,7 @@ function cloneGame(sourceGame: Chess): Chess {
 
 interface ChessAppProps {
   lang?: 'ja' | 'en';
-  initialMode?: 'ai' | 'pvp' | 'online';
+  initialMode?: 'ai' | 'pvp' | 'online' | 'practice';
 }
 
 export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppProps) {
@@ -70,7 +72,13 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
 
   // Match configuration
-  const [gameMode, setGameMode] = useState<'ai' | 'pvp' | 'online'>(initialMode);
+  const [gameMode, setGameMode] = useState<'ai' | 'pvp' | 'online' | 'practice'>(initialMode);
+  const [practiceTopMoves, setPracticeTopMoves] = useState<PracticeMoveOverlayItem[]>([]);
+  const [practiceDepth, setPracticeDepth] = useState<number>(0);
+  const [isPracticeEvaluating, setIsPracticeEvaluating] = useState<boolean>(false);
+  const [showPracticeArrows, setShowPracticeArrows] = useState<boolean>(true);
+  const [hoveredPracticeMoveIndex, setHoveredPracticeMoveIndex] = useState<number | null>(null);
+  const [practiceAutoReply, setPracticeAutoReply] = useState<boolean>(false);
   const [difficulty, setDifficulty] = useState<AIDifficulty>('medium');
   const [isDifficultyDropdownOpen, setIsDifficultyDropdownOpen] = useState<boolean>(false);
   const difficultyDropdownRef = useRef<HTMLDivElement>(null);
@@ -87,6 +95,28 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [onlineTcId, setOnlineTcId] = useState<OnlineTimeControlId>('none');
   const [onlineMySide, setOnlineMySide] = useState<'w' | 'b' | null>(null);
   const [onlineToastNotice, setOnlineToastNotice] = useState<string | null>(null);
+
+  // Effective online side determination to avoid null/mismatched side logic
+  const effectiveOnlineMySide: 'w' | 'b' = useMemo(() => {
+    if (onlineMySide) return onlineMySide;
+    const mgrSide = onlineManagerRef.current?.getMySide();
+    if (mgrSide) return mgrSide;
+    if (onlineManagerRef.current?.isUserHost()) {
+      return onlineHostSidePref === 'black' ? 'b' : 'w';
+    }
+    return 'b';
+  }, [onlineMySide, onlineHostSidePref]);
+
+  // Synchronize state if manager has side but local state hasn't updated
+  useEffect(() => {
+    if (gameMode === 'online' && onlinePhase === 'playing') {
+      const mgrSide = onlineManagerRef.current?.getMySide();
+      if (mgrSide && onlineMySide !== mgrSide) {
+        setOnlineMySide(mgrSide);
+        setBoardOrientation(mgrSide === 'b' ? 'black' : 'white');
+      }
+    }
+  }, [gameMode, onlinePhase, onlineMySide]);
 
   // Online Modals
   const [showOnlineGuideModal, setShowOnlineGuideModal] = useState<boolean>(false);
@@ -396,8 +426,9 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   }, [lang, soundEnabled, t, checkGameOverStatus, showOnlineToast]);
 
   // Mount URL listener for ?room=... or initialMode === 'online'
+  const hasInitializedOnlineRef = useRef<boolean>(false);
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || hasInitializedOnlineRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
     const modeParam = params.get('mode');
@@ -405,10 +436,12 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     if (roomParam) {
       const cleanRoom = roomParam.trim().toUpperCase();
       if (/^[A-Z0-9]{3,16}$/.test(cleanRoom)) {
+        hasInitializedOnlineRef.current = true;
         setGameMode('online');
         handleJoinOnlineRoom(cleanRoom);
       }
     } else if (initialMode === 'online' || modeParam === 'online') {
+      hasInitializedOnlineRef.current = true;
       setGameMode('online');
       handleStartOnlineHost();
     }
@@ -538,6 +571,148 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }
   }, [game, gameFen, gameMode, playerSide, difficulty, isGameOver, soundEnabled, checkGameOverStatus]);
 
+  // Execute move selected from Practice Mode overlay arrows or sidebar list
+  const handleExecutePracticeMove = useCallback(
+    (item: PracticeMoveOverlayItem) => {
+      if (isGameOver) return;
+      try {
+        const nextGame = cloneGame(game);
+        const moveRes = nextGame.move({
+          from: item.from,
+          to: item.to,
+          promotion: item.promotion || 'q',
+        });
+        if (!moveRes) return;
+
+        setGame(nextGame);
+        setGameFen(nextGame.fen());
+        setHistory(nextGame.history());
+        setRedoStack([]);
+        setHintArrow(null);
+        setSelectedSquare(null);
+        setHelpSquare(null);
+        setLastMove({ from: item.from, to: item.to });
+
+        if (moveRes.captured) {
+          playSound('capture', soundEnabled);
+        } else if (nextGame.inCheck()) {
+          playSound('check', soundEnabled);
+        } else if (moveRes.flags.includes('k') || moveRes.flags.includes('q')) {
+          playSound('castle', soundEnabled);
+        } else {
+          playSound('move', soundEnabled);
+        }
+
+        checkGameOverStatus(nextGame);
+      } catch (e) {
+        console.error('Failed to execute practice move:', e);
+      }
+    },
+    [game, isGameOver, soundEnabled, checkGameOverStatus]
+  );
+
+  // Practice Mode Continuous Engine Evaluation (Top 5 moves for both sides)
+  useEffect(() => {
+    if (gameMode !== 'practice' || isGameOver) {
+      setPracticeTopMoves([]);
+      setPracticeDepth(0);
+      setIsPracticeEvaluating(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsPracticeEvaluating(true);
+    setPracticeTopMoves([]);
+    setPracticeDepth(0);
+    const abortController = new AbortController();
+
+    const MIN_SUGGESTION_DEPTH = 10;
+
+    const parseEngineMoves = (res: any): PracticeMoveOverlayItem[] => {
+      if (!res || !res.best || res.best.length === 0) return [];
+      return res.best.slice(0, 5).map((item: any, idx: number): PracticeMoveOverlayItem => {
+        const from = item.move.slice(0, 2) as Square;
+        const to = item.move.slice(2, 4) as Square;
+        const promotion = item.move[4] || undefined;
+        let san = item.move;
+        try {
+          const tempG = cloneGame(game);
+          const m = tempG.move({ from, to, promotion: promotion || 'q' });
+          if (m) san = m.san;
+        } catch (e) {}
+
+        return {
+          rank: item.rank || idx + 1,
+          move: item.move,
+          from,
+          to,
+          san,
+          evalStr: item.evalWhiteStr,
+          promotion,
+        };
+      });
+    };
+
+    stockfishClient
+      .evaluate({
+        fen: gameFen,
+        depth: 14,
+        limit: 5,
+        signal: abortController.signal,
+        onProgress: (progressRes) => {
+          if (!isMounted) return;
+          const currentDepth = progressRes.depth || 0;
+          setPracticeDepth(currentDepth);
+
+          // Only render move arrows/suggestions once engine reaches minimum reliable depth (>= 10) or book
+          if (progressRes.isBook || currentDepth >= MIN_SUGGESTION_DEPTH) {
+            const moves = parseEngineMoves(progressRes);
+            if (moves.length > 0) {
+              setPracticeTopMoves(moves);
+            }
+            if (progressRes.positionEval) {
+              setScoreNumeric(progressRes.positionEval.numericScore);
+              setEvalStr(progressRes.positionEval.evalWhiteStr);
+            }
+          } else if (currentDepth >= 7 && progressRes.positionEval) {
+            // Smoothly update evaluation as search progresses
+            setScoreNumeric(progressRes.positionEval.numericScore);
+            setEvalStr(progressRes.positionEval.evalWhiteStr);
+          }
+        },
+      })
+      .then((finalRes) => {
+        if (!isMounted) return;
+        const currentDepth = finalRes.depth || 14;
+        setPracticeDepth(currentDepth);
+        const moves = parseEngineMoves(finalRes);
+        setPracticeTopMoves(moves);
+        if (finalRes && finalRes.positionEval) {
+          setScoreNumeric(finalRes.positionEval.numericScore);
+          setEvalStr(finalRes.positionEval.evalWhiteStr);
+        }
+
+        // Auto-reply for Black if enabled
+        if (practiceAutoReply && game.turn() === 'b' && moves.length > 0) {
+          const topMove = moves[0];
+          setTimeout(() => {
+            if (isMounted && game.turn() === 'b') {
+              handleExecutePracticeMove(topMove);
+            }
+          }, 600);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsPracticeEvaluating(false);
+      });
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [game, gameFen, gameMode, isGameOver, practiceAutoReply, handleExecutePracticeMove]);
+
   // Handle Piece Drop by human player
   const onPieceDrop = useCallback(
     ({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
@@ -551,7 +726,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       // In online mode, restrict player to their turn and side
       if (gameMode === 'online') {
         if (onlinePhase !== 'playing') return false;
-        if (game.turn() !== onlineMySide) {
+        if (game.turn() !== effectiveOnlineMySide) {
           showOnlineToast(t.onlineNotYourTurn);
           return false;
         }
@@ -595,10 +770,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           let nextW = whiteTime;
           let nextB = blackTime;
           if (incSec > 0) {
-            if (onlineMySide === 'w' && nextW !== null) nextW += incSec;
-            if (onlineMySide === 'b' && nextB !== null) nextB += incSec;
-            if (onlineMySide === 'w') setWhiteTime(nextW);
-            if (onlineMySide === 'b') setBlackTime(nextB);
+            if (effectiveOnlineMySide === 'w' && nextW !== null) nextW += incSec;
+            if (effectiveOnlineMySide === 'b' && nextB !== null) nextB += incSec;
+            if (effectiveOnlineMySide === 'w') setWhiteTime(nextW);
+            if (effectiveOnlineMySide === 'b') setBlackTime(nextB);
           }
 
           onlineManagerRef.current?.sendMove({
@@ -627,7 +802,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         return false;
       }
     },
-    [game, gameMode, playerSide, isGameOver, soundEnabled, checkGameOverStatus, onlinePhase, onlineMySide, onlineTcId, whiteTime, blackTime, showOnlineToast, t]
+    [game, gameMode, playerSide, isGameOver, soundEnabled, checkGameOverStatus, onlinePhase, effectiveOnlineMySide, onlineTcId, whiteTime, blackTime, showOnlineToast, t]
   );
 
   // Square Click handler (tap-to-move for touch/mouse & Help "?" trigger)
@@ -654,7 +829,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         // Online turn check
         if (gameMode === 'online') {
           if (onlinePhase !== 'playing') return;
-          if (game.turn() !== onlineMySide) {
+          if (game.turn() !== effectiveOnlineMySide) {
             showOnlineToast(t.onlineNotYourTurn);
             return;
           }
@@ -699,10 +874,10 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               let nextW = whiteTime;
               let nextB = blackTime;
               if (incSec > 0) {
-                if (onlineMySide === 'w' && nextW !== null) nextW += incSec;
-                if (onlineMySide === 'b' && nextB !== null) nextB += incSec;
-                if (onlineMySide === 'w') setWhiteTime(nextW);
-                if (onlineMySide === 'b') setBlackTime(nextB);
+                if (effectiveOnlineMySide === 'w' && nextW !== null) nextW += incSec;
+                if (effectiveOnlineMySide === 'b' && nextB !== null) nextB += incSec;
+                if (effectiveOnlineMySide === 'w') setWhiteTime(nextW);
+                if (effectiveOnlineMySide === 'b') setBlackTime(nextB);
               }
 
               onlineManagerRef.current?.sendMove({
@@ -732,7 +907,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
         // If clicking another piece belonging to the active player, reselect it
         if (pieceOnSquare && pieceOnSquare.color === game.turn()) {
-          if (gameMode === 'online' && pieceOnSquare.color !== onlineMySide) {
+          if (gameMode === 'online' && pieceOnSquare.color !== effectiveOnlineMySide) {
             // Cannot select opponent piece in online mode
             setSelectedSquare(null);
             setHelpSquare(square);
@@ -766,7 +941,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       }
 
       // In Online mode, restrict move selection when it's opponent's turn
-      if (gameMode === 'online' && game.turn() !== onlineMySide) {
+      if (gameMode === 'online' && game.turn() !== effectiveOnlineMySide) {
         if (pieceOnSquare) {
           setHelpSquare((prev) => (prev === square ? null : square));
         } else {
@@ -779,7 +954,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       if (pieceOnSquare) {
         setHelpSquare(square);
         if (pieceOnSquare.color === game.turn()) {
-          if (gameMode === 'online' && pieceOnSquare.color !== onlineMySide) {
+          if (gameMode === 'online' && pieceOnSquare.color !== effectiveOnlineMySide) {
             return;
           }
           setSelectedSquare(square);
@@ -788,7 +963,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         setHelpSquare(null);
       }
     },
-    [game, isGameOver, gameMode, playerSide, selectedSquare, soundEnabled, checkGameOverStatus, onlinePhase, onlineMySide, onlineTcId, whiteTime, blackTime, showOnlineToast, t]
+    [game, isGameOver, gameMode, playerSide, selectedSquare, soundEnabled, checkGameOverStatus, onlinePhase, effectiveOnlineMySide, onlineTcId, whiteTime, blackTime, showOnlineToast, t]
   );
 
   // Compute square highlights for last move, selected piece & king check
@@ -977,7 +1152,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   // Restart / New Game configuration
   const startNewGame = useCallback(
     (config: {
-      mode: 'ai' | 'pvp';
+      mode: 'ai' | 'pvp' | 'practice';
       difficulty: AIDifficulty;
       playerSide: 'w' | 'b' | 'random';
       timeControl: TimeControlOption;
@@ -1196,7 +1371,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const aiBotDisplayName = t.computerLabel;
 
   const topName = gameMode === 'online'
-    ? t.onlineOpponent
+    ? (topColor === effectiveOnlineMySide ? t.onlineYou : t.onlineOpponent)
     : gameMode === 'ai'
     ? topIsAi
       ? aiBotDisplayName
@@ -1204,7 +1379,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     : topColor === 'w' ? (lang === 'ja' ? '先手（白）' : 'Player 1 (White)') : (lang === 'ja' ? '後手（黒）' : 'Player 2 (Black)');
 
   const bottomName = gameMode === 'online'
-    ? t.onlineYou
+    ? (bottomColor === effectiveOnlineMySide ? t.onlineYou : t.onlineOpponent)
     : gameMode === 'ai'
     ? bottomIsAi
       ? aiBotDisplayName
@@ -1213,7 +1388,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
   // Direct Mode Switcher handler (switches mode on same page without navigation)
   const handleModeSelect = useCallback(
-    (mode: 'ai' | 'pvp' | 'online' | 'learn') => {
+    (mode: 'ai' | 'pvp' | 'online' | 'practice' | 'learn') => {
       if (mode === 'learn') {
         window.location.href = lang === 'ja' ? '/learn' : '/en/learn';
         return;
@@ -1227,6 +1402,33 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         return;
       }
       if (mode === gameMode) return;
+
+      if (mode === 'practice') {
+        setGameMode('practice');
+        setIsAiThinking(false);
+        setBoardOrientation('white');
+        setSelectedSquare(null);
+        setHelpSquare(null);
+        setLastMove(null);
+        setRotatePieces(false);
+        setShowPracticeArrows(true);
+
+        // Reset to clean board for practice
+        const freshGame = new Chess();
+        setGame(freshGame);
+        setGameFen(freshGame.fen());
+        setHistory([]);
+        setRedoStack([]);
+        setHintArrow(null);
+        setScoreNumeric(0);
+        setEvalStr('0.00');
+        setIsGameOver(false);
+        setWinner(null);
+        setWhiteTime(null);
+        setBlackTime(null);
+        playSound('reset', soundEnabled);
+        return;
+      }
 
       if (mode === 'pvp') {
         setGameMode('pvp');
@@ -1293,20 +1495,22 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
   const handleOnlineResignConfirm = useCallback(() => {
     setShowOnlineResignModal(false);
-    if (onlineMySide) {
-      onlineManagerRef.current?.sendResign(onlineMySide);
+    if (effectiveOnlineMySide) {
+      onlineManagerRef.current?.sendResign(effectiveOnlineMySide);
       setIsGameOver(true);
-      setWinner(onlineMySide === 'w' ? 'b' : 'w');
+      setWinner(effectiveOnlineMySide === 'w' ? 'b' : 'w');
       setGameOverReason('resignation');
       setShowGameOverModal(true);
       playSound('checkmate', soundEnabled);
     }
-  }, [onlineMySide, soundEnabled]);
+  }, [effectiveOnlineMySide, soundEnabled]);
 
   const handleOnlineNewGame = useCallback(async () => {
     setIsGameOver(false);
     setWinner(null);
     setShowGameOverModal(false);
+    setOnlineMySide(null);
+    setBoardOrientation('white');
     const freshGame = new Chess();
     setGame(freshGame);
     setGameFen(freshGame.fen());
@@ -1570,6 +1774,20 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
             <span>{t.modeOnline}</span>
           </button>
 
+          {/* Practice Mode */}
+          <button
+            type="button"
+            onClick={() => handleModeSelect('practice')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              gameMode === 'practice'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-[#71717a] hover:text-emerald-600 dark:hover:text-emerald-400'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{t.modePractice}</span>
+          </button>
+
           {/* Learn */}
           <a
             href={lang === 'ja' ? '/learn' : '/en/learn'}
@@ -1598,6 +1816,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           inviteUrl={onlineInviteUrl}
           hostSidePref={onlineHostSidePref}
           timeControl={onlineTcId}
+          isHost={onlineManagerRef.current ? onlineManagerRef.current.isUserHost() : true}
           onSidePrefChange={handleHostSidePrefChange}
           onOpenTimeControl={() => setShowOnlineTcModal(true)}
           onOpenGuide={() => setShowOnlineGuideModal(true)}
@@ -1646,6 +1865,17 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
             {/* Center: Chessboard Area */}
             <div className="relative z-10 w-full aspect-square rounded-2xl overflow-hidden bg-white dark:bg-[#121214] border border-[#ebebeb] dark:border-[#27272a] shadow-sm">
               <Chessboard options={chessboardOptions} />
+
+              {/* Practice Mode Arrows & Badges Overlay */}
+              {gameMode === 'practice' && showPracticeArrows && practiceTopMoves.length > 0 && (
+                <PracticeArrowsOverlay
+                  moves={practiceTopMoves}
+                  boardOrientation={boardOrientation}
+                  hoveredIndex={hoveredPracticeMoveIndex}
+                  onHoverMove={setHoveredPracticeMoveIndex}
+                  onMoveClick={handleExecutePracticeMove}
+                />
+              )}
 
               {/* Floating Online Toast Notice */}
               {onlineToastNotice && (
@@ -1822,55 +2052,101 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           )}
         </div>
 
-        {/* Right / Side Panel: Move History & Match Information */}
+        {/* Right / Side Panel: Move History & Match Information / Practice Mode Panel */}
         <div className="w-full flex flex-col gap-4">
-          {/* Game Status Info Card */}
-          <div className="w-full bg-white dark:bg-[#121214] rounded-2xl border border-[#ebebeb] dark:border-[#27272a] p-4 shadow-xs space-y-3 select-none transition-colors">
-            <h3 className="font-semibold text-xs sm:text-sm text-[#171717] dark:text-[#ededed]">{t.gameInfoTitle}</h3>
+          {gameMode === 'practice' ? (
+            <PracticeModePanel
+              t={t}
+              lang={lang}
+              turn={game.turn()}
+              isGameOver={isGameOver}
+              scoreNumeric={scoreNumeric}
+              evalStr={evalStr}
+              isEvaluating={isPracticeEvaluating}
+              depth={practiceDepth}
+              moves={practiceTopMoves}
+              hoveredIndex={hoveredPracticeMoveIndex}
+              showArrows={showPracticeArrows}
+              autoAiReply={practiceAutoReply}
+              isStartingPosition={history.length === 0}
+              fen={game.fen()}
+              onHoverMove={setHoveredPracticeMoveIndex}
+              onMoveClick={handleExecutePracticeMove}
+              onToggleArrows={() => setShowPracticeArrows((prev) => !prev)}
+              onToggleAutoReply={() => setPracticeAutoReply((prev) => !prev)}
+              onLoadOpening={(moveList) => {
+                const fresh = new Chess();
+                let lastM: { from: Square; to: Square } | null = null;
+                for (const m of moveList) {
+                  try {
+                    const res = fresh.move(m);
+                    if (res) {
+                      lastM = { from: res.from as Square, to: res.to as Square };
+                    }
+                  } catch (e) {
+                    console.error('Failed to play opening move', m, e);
+                    break;
+                  }
+                }
+                setGame(fresh);
+                setGameFen(fresh.fen());
+                setHistory(fresh.history());
+                setRedoStack([]);
+                setLastMove(lastM);
+                setSelectedSquare(null);
+                setHelpSquare(null);
+                playSound('move', soundEnabled);
+              }}
+            />
+          ) : (
+            /* Game Status Info Card */
+            <div className="w-full bg-white dark:bg-[#121214] rounded-2xl border border-[#ebebeb] dark:border-[#27272a] p-4 shadow-xs space-y-3 select-none transition-colors">
+              <h3 className="font-semibold text-xs sm:text-sm text-[#171717] dark:text-[#ededed]">{t.gameInfoTitle}</h3>
 
-            <div className="space-y-2 text-xs text-[#4d4d4d] dark:text-[#a1a1aa]">
-              <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
-                <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.timeLabel}</span>
-                <span className="font-semibold text-[#171717] dark:text-white flex items-center gap-1 font-mono">
-                  <Clock className="w-3 h-3 text-emerald-500" />
-                  {gameMode === 'online'
-                    ? (lang === 'ja' ? TIME_CONTROLS[onlineTcId]?.nameJa : TIME_CONTROLS[onlineTcId]?.nameEn)
-                    : getTimeControlLabel(timeControl)}
-                </span>
-              </div>
+              <div className="space-y-2 text-xs text-[#4d4d4d] dark:text-[#a1a1aa]">
+                <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
+                  <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.timeLabel}</span>
+                  <span className="font-semibold text-[#171717] dark:text-white flex items-center gap-1 font-mono">
+                    <Clock className="w-3 h-3 text-emerald-500" />
+                    {gameMode === 'online'
+                      ? (lang === 'ja' ? TIME_CONTROLS[onlineTcId]?.nameJa : TIME_CONTROLS[onlineTcId]?.nameEn)
+                      : getTimeControlLabel(timeControl)}
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
-                <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.currentTurnLabel}</span>
-                <span className="font-semibold text-[#171717] dark:text-white">
-                  {isGameOver ? t.gameOverTitle : (game.turn() === 'w' ? t.turnWhite : t.turnBlack)}
-                </span>
-              </div>
+                <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
+                  <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.currentTurnLabel}</span>
+                  <span className="font-semibold text-[#171717] dark:text-white">
+                    {isGameOver ? t.gameOverTitle : (game.turn() === 'w' ? t.turnWhite : t.turnBlack)}
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
-                <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.checkStatusLabel}</span>
-                <span className={`font-semibold ${
-                  (game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))
-                    ? 'text-rose-600 dark:text-rose-400 font-bold'
-                    : game.inCheck()
-                    ? 'text-rose-500 font-bold'
-                    : 'text-[#8f8f8f] dark:text-[#71717a]'
-                }`}>
-                  {(game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))
-                    ? t.checkmate
-                    : game.inCheck()
-                    ? t.check
-                    : t.none}
-                </span>
-              </div>
+                <div className="flex items-center justify-between py-1 border-b border-[#f2f2f2] dark:border-[#27272a]">
+                  <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.checkStatusLabel}</span>
+                  <span className={`font-semibold ${
+                    (game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))
+                      ? 'text-rose-600 dark:text-rose-400 font-bold'
+                      : game.inCheck()
+                      ? 'text-rose-500 font-bold'
+                      : 'text-[#8f8f8f] dark:text-[#71717a]'
+                  }`}>
+                    {(game.isCheckmate() || (isGameOver && gameOverReason === 'checkmate'))
+                      ? t.checkmate
+                      : game.inCheck()
+                      ? t.check
+                      : t.none}
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.evalLabel}</span>
-                <span className="font-mono font-semibold text-[#171717] dark:text-white">
-                  {scoreNumeric > 0 ? `${t.whiteAdvantage} (${evalStr})` : scoreNumeric < 0 ? `${t.blackAdvantage} (${evalStr})` : `${t.evenPosition} (${evalStr})`}
-                </span>
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-[#8f8f8f] dark:text-[#71717a]">{t.evalLabel}</span>
+                  <span className="font-mono font-semibold text-[#171717] dark:text-white">
+                    {scoreNumeric > 0 ? `${t.whiteAdvantage} (${evalStr})` : scoreNumeric < 0 ? `${t.blackAdvantage} (${evalStr})` : `${t.evenPosition} (${evalStr})`}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       )}
@@ -1908,7 +2184,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         isOpen={showGameOverModal}
         winner={winner}
         reason={gameOverReason}
-        playerSide={gameMode === 'online' ? (onlineMySide || 'w') : playerSide}
+        playerSide={gameMode === 'online' ? effectiveOnlineMySide : playerSide}
         gameMode={gameMode}
         moveCount={history.length}
         onPlayAgain={handlePlayAgain}

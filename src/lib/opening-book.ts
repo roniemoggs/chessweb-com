@@ -217,8 +217,8 @@ export function getOpeningBookResult(fen: string, limit: number = 5): EngineEval
   const activeColor = fen.split(' ')[1] || 'w';
   const bestMoves: EngineMoveData[] = bookEntries.slice(0, limit).map((entry, index) => {
     const rawScore = entry.scoreCp;
-    const numericScore = rawScore;
     const whiteCp = activeColor === 'b' ? -rawScore : rawScore;
+    const numericScore = whiteCp;
     const val = whiteCp / 100;
     const evalWhiteStr = val > 0 ? `+${val.toFixed(2)}` : val.toFixed(2);
 
@@ -253,6 +253,11 @@ export function getOpeningBookResult(fen: string, limit: number = 5): EngineEval
   return {
     best: bestMoves,
     worst: [],
-    positionEval
+    positionEval: {
+      ...positionEval,
+      depth: 99,
+    },
+    depth: 99,
+    isBook: true,
   };
 }

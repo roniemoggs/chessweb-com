@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Users, Play, X, Clock } from 'lucide-react';
+import { Bot, Users, Play, X, Clock, Sparkles } from 'lucide-react';
 import type { GameTranslations } from './gameTranslations';
 import type { AIDifficulty } from '../../lib/stockfish-client';
 import { useLockBodyScroll } from './useLockBodyScroll';
@@ -11,12 +11,12 @@ interface NewGameModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStartGame: (config: {
-    mode: 'ai' | 'pvp';
+    mode: 'ai' | 'pvp' | 'practice';
     difficulty: AIDifficulty;
     playerSide: 'w' | 'b' | 'random';
     timeControl: TimeControlOption;
   }) => void;
-  initialMode?: 'ai' | 'pvp';
+  initialMode?: 'ai' | 'pvp' | 'practice';
   initialDifficulty?: AIDifficulty;
   initialPlayerSide?: 'w' | 'b' | 'random';
   initialTimeControl?: TimeControlOption;
@@ -32,7 +32,7 @@ export const NewGameModal: React.FC<NewGameModalProps> = ({
   initialPlayerSide = 'w',
   initialTimeControl = 'unlimited',
 }) => {
-  const [mode, setMode] = React.useState<'ai' | 'pvp'>(initialMode);
+  const [mode, setMode] = React.useState<'ai' | 'pvp' | 'practice'>(initialMode);
   const [difficulty, setDifficulty] = React.useState<AIDifficulty>(initialDifficulty);
   const [playerSide, setPlayerSide] = React.useState<'w' | 'b' | 'random'>(initialPlayerSide);
   const [timeControl, setTimeControl] = React.useState<TimeControlOption>(initialTimeControl);
@@ -81,39 +81,55 @@ export const NewGameModal: React.FC<NewGameModalProps> = ({
           {/* Game Mode Selector */}
           <div>
             <label className="block text-xs font-semibold text-[#8f8f8f] dark:text-[#71717a] mb-2 uppercase tracking-wider">
-              {t.modeAi} / {t.modePvp}
+              {t.modeAi} / {t.modePvp} / {t.modePractice}
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setMode('ai')}
-                className={`p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
                   mode === 'ai'
                     ? 'border-[#171717] dark:border-white bg-[#fafafa] dark:bg-[#18181b] ring-1 ring-[#171717] dark:ring-white'
                     : 'border-[#ebebeb] dark:border-[#27272a] hover:border-[#171717]/30 dark:hover:border-white/30 bg-white dark:bg-[#121214]'
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-[#171717] dark:text-[#ededed]">
-                  <Bot className="w-4 h-4" />
-                  <span>{t.modeAi}</span>
+                  <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="truncate">{t.modeAi}</span>
                 </div>
-                <span className="text-[11px] text-[#8f8f8f] dark:text-[#71717a]">{t.modeAiDesc}</span>
+                <span className="text-[10px] text-[#8f8f8f] dark:text-[#71717a] line-clamp-2 leading-tight">{t.modeAiDesc}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setMode('pvp')}
-                className={`p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
                   mode === 'pvp'
                     ? 'border-[#171717] dark:border-white bg-[#fafafa] dark:bg-[#18181b] ring-1 ring-[#171717] dark:ring-white'
                     : 'border-[#ebebeb] dark:border-[#27272a] hover:border-[#171717]/30 dark:hover:border-white/30 bg-white dark:bg-[#121214]'
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-[#171717] dark:text-[#ededed]">
-                  <Users className="w-4 h-4" />
-                  <span>{t.modePvp}</span>
+                  <Users className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="truncate">{t.modePvp}</span>
                 </div>
-                <span className="text-[11px] text-[#8f8f8f] dark:text-[#71717a]">{t.modePvpDesc}</span>
+                <span className="text-[10px] text-[#8f8f8f] dark:text-[#71717a] line-clamp-2 leading-tight">{t.modePvpDesc}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode('practice')}
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                  mode === 'practice'
+                    ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 ring-1 ring-emerald-600 dark:ring-emerald-400'
+                    : 'border-[#ebebeb] dark:border-[#27272a] hover:border-emerald-500/40 bg-white dark:bg-[#121214]'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                  <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="truncate">{t.modePractice}</span>
+                </div>
+                <span className="text-[10px] text-[#8f8f8f] dark:text-[#71717a] line-clamp-2 leading-tight">{t.modePracticeDesc}</span>
               </button>
             </div>
           </div>

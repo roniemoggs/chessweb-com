@@ -1570,7 +1570,10 @@ export default function Home({
       if (reqId !== reqIdRef.current) return;
       if (game.fen() !== fen) return;
 
-      if (data.best) {
+      const MIN_SUGGESTION_DEPTH = 10;
+      const currentDepth = data.depth || 0;
+
+      if (data.best && (isFinal || data.isBook || currentDepth >= MIN_SUGGESTION_DEPTH)) {
         setBestMoves(data.best);
         const worstList = shouldCalculateWorst ? (data.worst || []) : [];
         setWorstMoves(worstList);
@@ -1606,12 +1609,12 @@ export default function Home({
           setActiveBadMove(null);
           clearDelayTimers();
         }
-      } else if (data.worst) {
+      } else if (data.worst && (isFinal || currentDepth >= MIN_SUGGESTION_DEPTH)) {
         setWorstMoves(shouldCalculateWorst ? data.worst : []);
       }
 
-      // Update position evaluation score & eval bar smoothly
-      if (data.positionEval) {
+      // Update position evaluation score & eval bar smoothly once preliminary depth is reached
+      if (data.positionEval && (isFinal || data.isBook || currentDepth >= 7)) {
         setPositionEval(data.positionEval);
       }
     };

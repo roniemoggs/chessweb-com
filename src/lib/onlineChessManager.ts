@@ -374,8 +374,8 @@ export class OnlineChessManager {
           const guestColor: 'w' | 'b' = hostColor === 'w' ? 'b' : 'w';
           this.mySide = hostColor;
           this.phase = 'playing';
-          this.events.onPhaseChange?.('playing');
           this.events.onMatchStart?.(this.mySide, this.tcId);
+          this.events.onPhaseChange?.('playing');
 
           // Reply with welcome packet to guest
           this.broadcastMessage({
@@ -390,15 +390,15 @@ export class OnlineChessManager {
       }
 
       case 'HOST_WELCOME': {
-        if (!this.isHost && this.phase === 'joining') {
+        if (!this.isHost && (this.phase === 'joining' || this.phase === 'waiting' || this.phase === 'idle')) {
           if (msg.guestSide === 'w' || msg.guestSide === 'b') {
             this.mySide = msg.guestSide;
             if (msg.tcId && TIME_CONTROLS[msg.tcId]) {
               this.tcId = msg.tcId;
             }
             this.phase = 'playing';
-            this.events.onPhaseChange?.('playing');
             this.events.onMatchStart?.(this.mySide, this.tcId);
+            this.events.onPhaseChange?.('playing');
           }
         }
         break;
@@ -479,6 +479,8 @@ export class OnlineChessManager {
   }
 
   private cleanup() {
+    this.mySide = null;
+    this.phase = 'idle';
     if (this.connection) {
       try {
         this.connection.close();

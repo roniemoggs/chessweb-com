@@ -9,8 +9,48 @@ export interface GameTranslations {
   modePvpDesc: string;
   modeOnline: string;
   modeOnlineDesc: string;
+  modePractice: string;
+  modePracticeDesc: string;
   modeLearn: string;
   modeLearnDesc: string;
+  
+  // Practice Mode
+  practiceHeader: string;
+  practiceTopMovesTitle: string;
+  practiceWhiteTurn: string;
+  practiceBlackTurn: string;
+  practiceClickToPlay: string;
+  practiceShowArrows: string;
+  practiceHideArrows: string;
+  practiceAutoAiReply: string;
+  practiceManualBoth: string;
+  practiceWithAi: string;
+  practiceAnalyzing: string;
+  practiceFlip: string;
+  practiceReset: string;
+  practiceEvalScore: string;
+  practiceCandidateMove: string;
+  practiceBestMove: string;
+  practiceBothSidesDesc: string;
+  
+  // Beginner-friendly Evaluation & Winning Chances
+  positionEvaluationTitle: string;
+  whiteWinningChances: string;
+  drawChances: string;
+  blackWinningChances: string;
+  whiteIsWinning: string;
+  whiteClearlyBetter: string;
+  whiteSlightlyBetter: string;
+  gameIsEqual: string;
+  blackSlightlyBetter: string;
+  blackClearlyBetter: string;
+  blackIsWinning: string;
+  mateInMovesWhite: string;
+  mateInMovesBlack: string;
+  mateForcedCheckmate: string;
+  showEngineScore: string;
+  hideEngineScore: string;
+  engineScoreDetails: string;
   
   // Difficulty levels
   diffVeryEasy: string;
@@ -183,8 +223,46 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     modePvpDesc: '1台の端末で対局',
     modeOnline: '友達対戦',
     modeOnlineDesc: '招待リンクでオンライン対戦',
+    modePractice: '練習モード',
+    modePracticeDesc: '両手番でAIがTop 5最善手を提示',
     modeLearn: '学ぶ',
     modeLearnDesc: 'ルールと駒の動かし方',
+
+    // Practice Mode
+    practiceHeader: '練習モード',
+    practiceTopMovesTitle: 'AI最善候補手 (Top 5)',
+    practiceWhiteTurn: '⚪ 先手（白）の手番',
+    practiceBlackTurn: '⚫ 後手（黒）の手番',
+    practiceClickToPlay: 'クリックして指す',
+    practiceShowArrows: '矢印表示',
+    practiceHideArrows: '矢印非表示',
+    practiceAutoAiReply: 'AI自動返手',
+    practiceManualBoth: '両手番自由練習',
+    practiceWithAi: 'AIと練習',
+    practiceAnalyzing: 'AI思考中...',
+    practiceFlip: '盤面反転',
+    practiceReset: '初期配置に戻す',
+    practiceEvalScore: '局面評価値',
+    practiceCandidateMove: '候補手',
+    practiceBestMove: '最善手',
+    practiceBothSidesDesc: '白・黒どちらの手番でも、AIが上位5つの有力候補手を矢印と順位バッジ（1〜5）で常時ガイドします。',
+    positionEvaluationTitle: '勝率の目安',
+    whiteWinningChances: '白の勝率',
+    drawChances: '引き分け',
+    blackWinningChances: '黒の勝率',
+    whiteIsWinning: '白が勝勢（勝ち濃厚）',
+    whiteClearlyBetter: '白が優勢',
+    whiteSlightlyBetter: '白がやや有利',
+    gameIsEqual: '形勢互角',
+    blackSlightlyBetter: '黒がやや有利',
+    blackClearlyBetter: '黒が優勢',
+    blackIsWinning: '黒が勝勢（勝ち濃厚）',
+    mateInMovesWhite: '白の {n} 手詰め',
+    mateInMovesBlack: '黒の {n} 手詰め',
+    mateForcedCheckmate: '強制チェックメイト（詰み）',
+    showEngineScore: 'エンジンの詳細値を表示',
+    hideEngineScore: '詳細値を隠す',
+    engineScoreDetails: 'AIエンジン評価値',
     diffVeryEasy: '超初級',
     diffVeryEasyDesc: 'ミスが多く最も勝ちやすいレベル',
     diffEasy: '初級',
@@ -335,8 +413,46 @@ export const GAME_TRANSLATIONS: Record<'ja' | 'en', GameTranslations> = {
     modePvpDesc: 'Pass & Play locally',
     modeOnline: 'Online',
     modeOnlineDesc: 'Play with a friend',
+    modePractice: 'Practice',
+    modePracticeDesc: 'AI suggests Top 5 moves for both sides',
     modeLearn: 'Learn',
     modeLearnDesc: 'Rules & piece guides',
+
+    // Practice Mode
+    practiceHeader: 'Practice Mode',
+    practiceTopMovesTitle: 'AI Top 5 Suggestions',
+    practiceWhiteTurn: '⚪ White to Move',
+    practiceBlackTurn: '⚫ Black to Move',
+    practiceClickToPlay: 'Click to play move',
+    practiceShowArrows: 'Show Arrows',
+    practiceHideArrows: 'Hide Arrows',
+    practiceAutoAiReply: 'AI Auto-Reply',
+    practiceManualBoth: 'Free Both Sides',
+    practiceWithAi: 'Practice with AI',
+    practiceAnalyzing: 'AI Analyzing...',
+    practiceFlip: 'Flip Board',
+    practiceReset: 'Reset to Start',
+    practiceEvalScore: 'Position Evaluation',
+    practiceCandidateMove: 'Candidate',
+    practiceBestMove: 'Best Move',
+    practiceBothSidesDesc: 'Stockfish analyzes the board continuously, displaying top 5 engine recommendations for both White and Black with numbered arrow badges (1-5).',
+    positionEvaluationTitle: 'Win Chance (approx)',
+    whiteWinningChances: "White's winning chances",
+    drawChances: 'Draw chances',
+    blackWinningChances: "Black's winning chances",
+    whiteIsWinning: 'White is winning',
+    whiteClearlyBetter: 'White is clearly better',
+    whiteSlightlyBetter: 'White is slightly better',
+    gameIsEqual: 'Even position',
+    blackSlightlyBetter: 'Black is slightly better',
+    blackClearlyBetter: 'Black is clearly better',
+    blackIsWinning: 'Black is winning',
+    mateInMovesWhite: 'White has mate in {n} moves',
+    mateInMovesBlack: 'Black has mate in {n} moves',
+    mateForcedCheckmate: 'Forced Checkmate',
+    showEngineScore: 'Show engine score',
+    hideEngineScore: 'Hide engine score',
+    engineScoreDetails: 'Engine Evaluation',
     diffVeryEasy: 'Very Easy',
     diffVeryEasyDesc: 'Very weak, best for beginners to practice',
     diffEasy: 'Easy',

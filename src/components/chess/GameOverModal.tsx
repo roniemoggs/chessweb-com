@@ -11,7 +11,7 @@ interface GameOverModalProps {
   winner: 'w' | 'b' | 'draw' | null;
   reason: GameOverReason;
   playerSide: 'w' | 'b';
-  gameMode: 'ai' | 'pvp' | 'online';
+  gameMode: 'ai' | 'pvp' | 'online' | 'practice';
   moveCount: number;
   onPlayAgain: () => void;
   onClose: () => void;

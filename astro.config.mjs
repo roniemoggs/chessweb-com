@@ -79,8 +79,11 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      dedupe: ['react', 'react-dom'],
+    },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'chess.js', 'react-chessboard', 'lucide-react', 'qrcode'],
+      include: ['chess.js', 'react-chessboard', 'lucide-react', 'qrcode'],
     },
   },
   i18n: {

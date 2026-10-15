@@ -9,6 +9,7 @@ interface OnlineCardProps {
   inviteUrl: string;
   hostSidePref: HostSidePref;
   timeControl: OnlineTimeControlId;
+  isHost?: boolean;
   onSidePrefChange: (side: HostSidePref) => void;
   onOpenTimeControl: () => void;
   onOpenGuide: () => void;
@@ -23,6 +24,7 @@ export const OnlineCard: React.FC<OnlineCardProps> = ({
   inviteUrl,
   hostSidePref,
   timeControl,
+  isHost = true,
   onSidePrefChange,
   onOpenTimeControl,
   onOpenGuide,
@@ -130,17 +132,25 @@ export const OnlineCard: React.FC<OnlineCardProps> = ({
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-[#171717] dark:text-white">
-                {t.onlineHostSideLabel}
+                {isJoining || !isHost
+                  ? (lang === 'ja' ? '対局手番（ホスト設定）' : 'Side Assignment (Host settings)')
+                  : t.onlineHostSideLabel}
               </span>
               <span className="text-[11px] text-[#737373] dark:text-[#a1a1aa]">
-                {hostSidePref === 'white'
-                  ? (lang === 'ja' ? '白（先手）' : 'White')
-                  : hostSidePref === 'black'
-                  ? (lang === 'ja' ? '黒（後手）' : 'Black')
-                  : (lang === 'ja' ? 'ランダム' : 'Random')}
+                {isJoining || !isHost
+                  ? (hostSidePref === 'white'
+                      ? (lang === 'ja' ? 'あなた: 黒（後手） / 相手: 白' : 'You: Black (2nd) / Host: White')
+                      : hostSidePref === 'black'
+                      ? (lang === 'ja' ? 'あなた: 白（先手） / 相手: 黒' : 'You: White (1st) / Host: Black')
+                      : (lang === 'ja' ? 'ランダム（対局開始時に決定）' : 'Random (Decided at start)'))
+                  : (hostSidePref === 'white'
+                      ? (lang === 'ja' ? '白（先手）' : 'White')
+                      : hostSidePref === 'black'
+                      ? (lang === 'ja' ? '黒（後手）' : 'Black')
+                      : (lang === 'ja' ? 'ランダム' : 'Random'))}
               </span>
             </div>
-            <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className={`flex items-center gap-2 sm:gap-2.5 ${isJoining || !isHost ? 'opacity-65 pointer-events-none' : ''}`}>
               {/* White King Button */}
               <button
                 type="button"
