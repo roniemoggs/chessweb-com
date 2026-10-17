@@ -102,6 +102,7 @@ export function isMoveValidForFen(fen: string, move: string): boolean {
 class StockfishClient {
   private worker: Worker | null = null;
   private currentSessionId: number = 0;
+  private activeSessionId: number = 0;
   private isSearching: boolean = false;
   private isSyncing: boolean = false;
   private readyResolvers: Array<() => void> = [];
@@ -121,7 +122,7 @@ class StockfishClient {
 
   // WASM for 3x-5x native speed, falling back to ASM.js if WASM is unavailable
   private wasmScriptPath: string = '/stockfish.wasm.js';
-  private asmScriptPath: string = '/stockfish/stockfish-19-asm.js';
+  private asmScriptPath: string = '/stockfish.js';
   private activeScriptPath: string = '/stockfish.wasm.js';
   private hasWasmFailed: boolean = false;
 
@@ -154,6 +155,7 @@ class StockfishClient {
   }
 
   private clearActiveSession() {
+    this.activeSessionId = 0;
     if (this.activeProgressThrottleTimeout) {
       clearTimeout(this.activeProgressThrottleTimeout);
       this.activeProgressThrottleTimeout = null;
@@ -168,6 +170,7 @@ class StockfishClient {
   }
 
   public stopCurrent() {
+    this.activeSessionId = 0;
     if (this.activeReject) {
       this.activeReject(new Error('Evaluation cancelled'));
     }
@@ -319,8 +322,8 @@ class StockfishClient {
       return;
     }
 
-    // Ignore all output if syncing (waiting for worker to stop previous search) or not searching
-    if (this.isSyncing || !this.isSearching) {
+    // Ignore all output if syncing (waiting for worker to stop previous search), not searching, or stale session
+    if (this.isSyncing || !this.isSearching || this.activeSessionId !== this.currentSessionId) {
       return;
     }
 
@@ -382,6 +385,9 @@ class StockfishClient {
     }
 
     if (line.includes('bestmove')) {
+      if (this.activeSessionId !== this.currentSessionId || !this.isSearching) {
+        return;
+      }
       this.isSearching = false;
       const finalResult = this.buildActiveResult();
 
@@ -496,6 +502,7 @@ class StockfishClient {
       this.activeCacheKey = cacheKey;
       this.activeAllMoves = {};
       this.activeLastProgressTime = 0;
+      this.activeSessionId = sessionId;
       this.isSearching = true;
 
       const abortHandler = () => {

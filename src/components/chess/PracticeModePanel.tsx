@@ -13,6 +13,8 @@ interface PracticeModePanelProps {
   lang: 'ja' | 'en';
   turn: 'w' | 'b';
   isGameOver: boolean;
+  gameOverReason?: string | null;
+  winner?: 'w' | 'b' | 'draw' | null;
   scoreNumeric: number;
   evalStr: string;
   isEvaluating?: boolean;
@@ -35,6 +37,8 @@ export const PracticeModePanel: React.FC<PracticeModePanelProps> = ({
   lang,
   turn,
   isGameOver,
+  gameOverReason = null,
+  winner = null,
   scoreNumeric,
   evalStr,
   isEvaluating = false,
@@ -70,6 +74,8 @@ export const PracticeModePanel: React.FC<PracticeModePanelProps> = ({
           scoreNumeric={scoreNumeric}
           evalStr={evalStr}
           isGameOver={isGameOver}
+          gameOverReason={gameOverReason}
+          winner={winner}
           isEvaluating={isEvaluating}
           depth={depth}
           isStartingPosition={isStartingPosition}

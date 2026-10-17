@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, RefreshCw, Eye, Loader2, X, Plus, Zap } from 'lucide-react';
+import { Trophy, RefreshCw, Eye, Loader2, X, Plus, Zap, Undo2 } from 'lucide-react';
 import type { GameTranslations } from './gameTranslations';
 import type { OnlineRematchState } from '../../lib/onlineChessManager';
 import { useLockBodyScroll } from './useLockBodyScroll';
@@ -16,6 +16,7 @@ interface GameOverModalProps {
   moveCount: number;
   onPlayAgain: () => void;
   onClose: () => void;
+  onUndo?: () => void;
   onlineRematchState?: OnlineRematchState;
   isOpponentDisconnected?: boolean;
   opponentHasLeft?: boolean;
@@ -37,6 +38,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   moveCount,
   onPlayAgain,
   onClose,
+  onUndo,
   onlineRematchState = 'none',
   isOpponentDisconnected = false,
   opponentHasLeft = false,
@@ -47,9 +49,10 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   onNewOnlineRoom,
   onFindNewOpponent,
 }) => {
-  useLockBodyScroll(isOpen);
+  const shouldShow = isOpen && gameMode !== 'practice';
+  useLockBodyScroll(shouldShow);
 
-  if (!isOpen) return null;
+  if (!shouldShow) return null;
 
   let title = '';
   let description = '';
@@ -306,6 +309,20 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         ) : (
           <div className="w-full flex flex-col gap-2">
+            {onUndo && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onUndo();
+                }}
+                className="w-full py-2.5 px-4 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold text-xs border border-emerald-200 dark:border-emerald-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                <span>{t.undo}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onPlayAgain}

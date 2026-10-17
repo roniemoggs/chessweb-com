@@ -14,7 +14,7 @@ import { getGameTranslations } from './gameTranslations';
 import { ChessPiece } from './ChessPiece';
 import { PieceInfoModal, type PieceType } from './PieceInfoModal';
 import { TimeControlInfoModal, type TimeControlTopic } from './TimeControlInfoModal';
-import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock, Sparkles, RefreshCw } from 'lucide-react';
+import { Bot, Users, AlertCircle, Globe, BookOpen, Copy, Check, X, ChevronDown, Clock, Sparkles, RefreshCw, Eye, Undo2 } from 'lucide-react';
 import {
   OnlineChessManager,
   type OnlinePhase,
@@ -48,17 +48,33 @@ const PIECE_VALUES: Record<string, number> = {
 };
 
 function cloneGame(sourceGame: Chess): Chess {
-  const cloned = new Chess();
+  try {
+    const cloned = new Chess();
+    const moves = sourceGame.history();
+    if (moves && moves.length > 0) {
+      for (const m of moves) {
+        cloned.move(m);
+      }
+      return cloned;
+    }
+  } catch (e) {
+    console.error('Failed to clone chess game via history:', e);
+  }
   try {
     const pgn = sourceGame.pgn();
-    if (pgn) {
+    if (pgn && pgn.trim().length > 0) {
+      const cloned = new Chess();
       cloned.loadPgn(pgn);
       return cloned;
     }
-  } catch (err) {
-    console.error('Failed to clone chess game via PGN:', err);
+  } catch (e) {
+    console.error('Failed to clone chess game via PGN:', e);
   }
-  return new Chess(sourceGame.fen());
+  try {
+    return new Chess(sourceGame.fen());
+  } catch (err) {
+    return new Chess();
+  }
 }
 
 interface ChessAppProps {
@@ -73,7 +89,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [game, setGame] = useState<Chess>(() => new Chess());
   const [gameFen, setGameFen] = useState<string>(() => new Chess().fen());
   const [history, setHistory] = useState<string[]>([]);
-  const [redoStack, setRedoStack] = useState<Array<Array<{ from: Square; to: Square; promotion?: string }>>>([]);
+  const [redoStack, setRedoStack] = useState<Array<Array<{ from: Square; to: Square; promotion?: string; san?: string }>>>([]);
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white');
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
 
@@ -85,6 +101,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
   const [showPracticeArrows, setShowPracticeArrows] = useState<boolean>(true);
   const [hoveredPracticeMoveIndex, setHoveredPracticeMoveIndex] = useState<number | null>(null);
   const [practiceAutoReply, setPracticeAutoReply] = useState<boolean>(false);
+  const skipPracticeAutoReplyRef = useRef<boolean>(false);
   const [difficulty, setDifficulty] = useState<AIDifficulty>('medium');
   const [isDifficultyDropdownOpen, setIsDifficultyDropdownOpen] = useState<boolean>(false);
   const difficultyDropdownRef = useRef<HTMLDivElement>(null);
@@ -307,6 +324,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setWinner(winningColor);
       setGameOverReason('checkmate');
       setIsGameOver(true);
+      setScoreNumeric(winningColor === 'w' ? 100000 : -100000);
+      setEvalStr(winningColor === 'w' ? '#M0' : '-#M0');
       setHintArrow(null);
       setSelectedSquare(null);
       setHelpSquare(null);
@@ -316,12 +335,14 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         onlineManagerRef.current?.setGameOver();
       }
 
-      // Delay showing the game over modal card by 1.5s so the player can process the checkmate
+      // Delay showing the game over modal card by 1.5s so the player can process the checkmate (disabled in practice mode)
       clearGameOverModalTimer();
-      gameOverModalTimerRef.current = setTimeout(() => {
-        setShowGameOverModal(true);
-        gameOverModalTimerRef.current = null;
-      }, 1500);
+      if (gameMode !== 'practice') {
+        gameOverModalTimerRef.current = setTimeout(() => {
+          setShowGameOverModal(true);
+          gameOverModalTimerRef.current = null;
+        }, 1500);
+      }
       return true;
     }
 
@@ -329,10 +350,14 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setWinner('draw');
       setGameOverReason(currentGame.isStalemate() ? 'stalemate' : 'draw');
       setIsGameOver(true);
+      setScoreNumeric(0);
+      setEvalStr('0.0');
       if (gameMode === 'online') {
         onlineManagerRef.current?.setGameOver();
       }
-      setShowGameOverModal(true);
+      if (gameMode !== 'practice') {
+        setShowGameOverModal(true);
+      }
       playSound('reset', soundEnabled);
       return true;
     }
@@ -864,6 +889,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
         });
         if (!moveRes) return;
 
+        skipPracticeAutoReplyRef.current = false;
         setGame(nextGame);
         setGameFen(nextGame.fen());
         setHistory(nextGame.history());
@@ -908,7 +934,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     setPracticeDepth(0);
     const abortController = new AbortController();
 
-    const MIN_SUGGESTION_DEPTH = 10;
+    const MIN_SUGGESTION_DEPTH = 4;
 
     const parseEngineMoves = (res: any): PracticeMoveOverlayItem[] => {
       if (!res || !res.best || res.best.length === 0) return [];
@@ -974,11 +1000,11 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           setEvalStr(finalRes.positionEval.evalWhiteStr);
         }
 
-        // Auto-reply for Black if enabled
-        if (practiceAutoReply && game.turn() === 'b' && moves.length > 0) {
+        // Auto-reply for Black if enabled (only when user played forward move, not on undo/redo/opening study)
+        if (practiceAutoReply && !skipPracticeAutoReplyRef.current && game.turn() === 'b' && moves.length > 0) {
           const topMove = moves[0];
           setTimeout(() => {
-            if (isMounted && game.turn() === 'b') {
+            if (isMounted && !skipPracticeAutoReplyRef.current && game.turn() === 'b') {
               handleExecutePracticeMove(topMove);
             }
           }, 600);
@@ -1024,6 +1050,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
         if (!moveRes) return false;
 
+        skipPracticeAutoReplyRef.current = false;
         setGame(nextGame);
         setGameFen(nextGame.fen());
         setHistory(nextGame.history());
@@ -1070,13 +1097,15 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           });
         }
 
-        // Quick evaluation for eval bar
-        stockfishClient.evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 }).then((evalRes) => {
-          if (evalRes && evalRes.positionEval) {
-            setScoreNumeric(evalRes.positionEval.numericScore);
-            setEvalStr(evalRes.positionEval.evalWhiteStr);
-          }
-        }).catch(() => {});
+        // Quick evaluation for eval bar (skipped in practice mode since practice has its own continuous evaluator)
+        if (gameMode !== 'practice') {
+          stockfishClient.evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 }).then((evalRes) => {
+            if (evalRes && evalRes.positionEval) {
+              setScoreNumeric(evalRes.positionEval.numericScore);
+              setEvalStr(evalRes.positionEval.evalWhiteStr);
+            }
+          }).catch(() => {});
+        }
 
         setSelectedSquare(null);
         setHelpSquare(null);
@@ -1128,6 +1157,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           });
 
           if (moveRes) {
+            skipPracticeAutoReplyRef.current = false;
             setGame(nextGame);
             setGameFen(nextGame.fen());
             setHistory(nextGame.history());
@@ -1176,13 +1206,15 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               });
             }
 
-            // Quick evaluation for eval bar
-            stockfishClient.evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 }).then((evalRes) => {
-              if (evalRes && evalRes.positionEval) {
-                setScoreNumeric(evalRes.positionEval.numericScore);
-                setEvalStr(evalRes.positionEval.evalWhiteStr);
-              }
-            }).catch(() => {});
+            // Quick evaluation for eval bar (skipped in practice mode since practice has its own continuous evaluator)
+            if (gameMode !== 'practice') {
+              stockfishClient.evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 }).then((evalRes) => {
+                if (evalRes && evalRes.positionEval) {
+                  setScoreNumeric(evalRes.positionEval.numericScore);
+                  setEvalStr(evalRes.positionEval.evalWhiteStr);
+                }
+              }).catch(() => {});
+            }
 
             checkGameOverStatus(nextGame);
             return;
@@ -1299,42 +1331,77 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
   // Undo
   const handleUndo = useCallback(() => {
-    if (isGameOver || isAiThinking) return;
-    const nextGame = cloneGame(game);
-    const batch: Array<{ from: Square; to: Square; promotion?: string }> = [];
+    if (isAiThinking) return;
+    if (history.length === 0) return;
 
+    if (gameMode === 'practice') {
+      skipPracticeAutoReplyRef.current = true;
+    }
+
+    let movesToUndo = 1;
     if (gameMode === 'ai') {
-      if (nextGame.history().length >= 2) {
-        const aiMove = nextGame.undo();
-        const playerMove = nextGame.undo();
-        if (playerMove && aiMove) {
-          batch.push(
-            { from: playerMove.from as Square, to: playerMove.to as Square, promotion: playerMove.promotion },
-            { from: aiMove.from as Square, to: aiMove.to as Square, promotion: aiMove.promotion }
-          );
-        }
-      } else if (nextGame.history().length === 1 && nextGame.turn() !== playerSide) {
-        const aiMove = nextGame.undo();
-        if (aiMove) {
-          batch.push({ from: aiMove.from as Square, to: aiMove.to as Square, promotion: aiMove.promotion });
-        }
+      if (isGameOver && winner === playerSide) {
+        movesToUndo = 1;
+      } else if (history.length >= 2) {
+        movesToUndo = 2;
       } else {
-        return;
+        movesToUndo = 1;
       }
-    } else {
-      if (nextGame.history().length >= 1) {
-        const undone = nextGame.undo();
-        if (undone) {
-          batch.push({ from: undone.from as Square, to: undone.to as Square, promotion: undone.promotion });
-        }
+    }
+
+    let nextGame = cloneGame(game);
+    const batch: Array<{ from: Square; to: Square; promotion?: string; san?: string }> = [];
+
+    let undoSuccess = true;
+    for (let i = 0; i < movesToUndo; i++) {
+      const undone = nextGame.undo();
+      if (undone) {
+        batch.unshift({ from: undone.from as Square, to: undone.to as Square, promotion: undone.promotion, san: undone.san });
       } else {
-        return;
+        undoSuccess = false;
+        break;
+      }
+    }
+
+    // Fallback: If chess.js undo failed (e.g. game lost internal PGN), reconstruct from history state
+    if (!undoSuccess) {
+      batch.length = 0;
+      const targetCount = Math.max(0, history.length - movesToUndo);
+      const targetHistory = history.slice(0, targetCount);
+      const undoneSans = history.slice(targetCount);
+      const fresh = new Chess();
+      for (const san of targetHistory) {
+        try {
+          fresh.move(san);
+        } catch (e) {
+          break;
+        }
+      }
+      nextGame = fresh;
+
+      let temp = cloneGame(fresh);
+      for (const san of undoneSans) {
+        try {
+          const res = temp.move(san);
+          if (res) {
+            batch.push({ from: res.from as Square, to: res.to as Square, promotion: res.promotion, san: res.san });
+          }
+        } catch (e) {
+          break;
+        }
       }
     }
 
     if (batch.length > 0) {
       setRedoStack((prev) => [...prev, batch]);
     }
+
+    // Reset game over states when taking back a move
+    setIsGameOver(false);
+    setWinner(null);
+    setGameOverReason(null);
+    setShowGameOverModal(false);
+    clearGameOverModalTimer();
 
     setGame(nextGame);
     setGameFen(nextGame.fen());
@@ -1350,21 +1417,45 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       setLastMove(null);
     }
     playSound('reset', soundEnabled);
-  }, [game, gameMode, playerSide, isGameOver, isAiThinking, soundEnabled]);
+
+    if (gameMode !== 'practice') {
+      stockfishClient
+        .evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 })
+        .then((evalRes) => {
+          if (evalRes && evalRes.positionEval) {
+            setScoreNumeric(evalRes.positionEval.numericScore);
+            setEvalStr(evalRes.positionEval.evalWhiteStr);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [game, gameMode, playerSide, isGameOver, winner, isAiThinking, soundEnabled, clearGameOverModalTimer, history]);
 
   // Redo
   const handleRedo = useCallback(() => {
-    if (isGameOver || isAiThinking || redoStack.length === 0) return;
+    if (isAiThinking || redoStack.length === 0) return;
     const nextRedoStack = [...redoStack];
     const batch = nextRedoStack.pop();
     if (!batch || batch.length === 0) return;
+
+    if (gameMode === 'practice') {
+      skipPracticeAutoReplyRef.current = true;
+    }
 
     const nextGame = cloneGame(game);
     let lastMoveRes: any = null;
 
     try {
       for (const m of batch) {
-        lastMoveRes = nextGame.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+        try {
+          if (m.san) {
+            lastMoveRes = nextGame.move(m.san);
+          } else {
+            lastMoveRes = nextGame.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+          }
+        } catch (e) {
+          lastMoveRes = nextGame.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+        }
       }
     } catch (e) {
       console.error('Redo move execution error:', e);
@@ -1372,6 +1463,12 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
     }
 
     if (!lastMoveRes) return;
+
+    setIsGameOver(false);
+    setWinner(null);
+    setGameOverReason(null);
+    setShowGameOverModal(false);
+    clearGameOverModalTimer();
 
     setGame(nextGame);
     setGameFen(nextGame.fen());
@@ -1399,18 +1496,20 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
       playSound('move', soundEnabled);
     }
 
-    stockfishClient
-      .evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 })
-      .then((evalRes) => {
-        if (evalRes && evalRes.positionEval) {
-          setScoreNumeric(evalRes.positionEval.numericScore);
-          setEvalStr(evalRes.positionEval.evalWhiteStr);
-        }
-      })
-      .catch(() => {});
+    if (gameMode !== 'practice') {
+      stockfishClient
+        .evaluate({ fen: nextGame.fen(), depth: 6, limit: 1 })
+        .then((evalRes) => {
+          if (evalRes && evalRes.positionEval) {
+            setScoreNumeric(evalRes.positionEval.numericScore);
+            setEvalStr(evalRes.positionEval.evalWhiteStr);
+          }
+        })
+        .catch(() => {});
+    }
 
     checkGameOverStatus(nextGame);
-  }, [game, redoStack, isGameOver, isAiThinking, soundEnabled, checkGameOverStatus]);
+  }, [game, redoStack, isAiThinking, soundEnabled, checkGameOverStatus, gameMode, clearGameOverModalTimer]);
 
   // Hint
   const handleHint = useCallback(() => {
@@ -2280,6 +2379,38 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
                 </div>
               )}
 
+              {/* Reviewing Board Notification for offline modes (excluded in practice mode) */}
+              {gameMode !== 'online' && gameMode !== 'practice' && !showGameOverModal && isGameOver && (
+                <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-40 mx-auto max-w-md rounded-2xl bg-white/95 dark:bg-[#18181b]/95 border border-[#ebebeb] dark:border-[#27272a] backdrop-blur-md p-2.5 sm:p-3 shadow-lg flex items-center justify-between gap-2 select-none animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Eye className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span className="font-semibold text-xs text-[#171717] dark:text-[#ededed] truncate">
+                      {lang === 'ja'
+                        ? '盤面確認中：「待った」で巻き戻して研究できます'
+                        : 'Reviewing Board: Click Undo to study positions'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleUndo}
+                      disabled={history.length === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      <span>{t.undo}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGameOverModal(true)}
+                      className="px-2.5 py-1.5 rounded-full bg-[#f4f4f5] dark:bg-[#27272a] hover:bg-[#e4e4e7] dark:hover:bg-[#3f3f46] text-[#52525b] dark:text-[#d4d4d8] font-medium text-xs transition-all cursor-pointer"
+                    >
+                      {lang === 'ja' ? '結果を見る' : 'Results'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 15-Second Grace Period Disconnection Banner */}
               {gameMode === 'online' && onlinePhase === 'playing' && disconnectCountdown !== null && (
                 <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-40 mx-auto max-w-md rounded-2xl bg-white/95 dark:bg-[#18181b]/95 border-2 border-amber-500/70 dark:border-amber-400/70 backdrop-blur-md p-3.5 sm:p-4 shadow-2xl text-center select-none animate-in fade-in zoom-in-95 duration-200">
@@ -2496,6 +2627,8 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               lang={lang}
               turn={game.turn()}
               isGameOver={isGameOver}
+              gameOverReason={gameOverReason}
+              winner={winner}
               scoreNumeric={scoreNumeric}
               evalStr={evalStr}
               isEvaluating={isPracticeEvaluating}
@@ -2511,6 +2644,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
               onToggleArrows={() => setShowPracticeArrows((prev) => !prev)}
               onToggleAutoReply={() => setPracticeAutoReply((prev) => !prev)}
               onLoadOpening={(moveList) => {
+                skipPracticeAutoReplyRef.current = true;
                 const fresh = new Chess();
                 let lastM: { from: Square; to: Square } | null = null;
                 for (const m of moveList) {
@@ -2617,7 +2751,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
 
       <GameOverModal
         t={t}
-        isOpen={showGameOverModal}
+        isOpen={showGameOverModal && gameMode !== 'practice'}
         winner={winner}
         reason={gameOverReason}
         playerSide={gameMode === 'online' ? effectiveOnlineMySide : playerSide}
@@ -2628,6 +2762,7 @@ export default function ChessApp({ lang = 'ja', initialMode = 'ai' }: ChessAppPr
           clearGameOverModalTimer();
           setShowGameOverModal(false);
         }}
+        onUndo={handleUndo}
         onlineRematchState={onlineRematchState}
         isOpponentDisconnected={onlineManagerRef.current?.isDisconnectGraceActive() || disconnectCountdown !== null}
         opponentHasLeft={onlineOpponentHasLeft || onlineManagerRef.current?.hasOpponentLeft()}

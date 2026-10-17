@@ -43,10 +43,10 @@ export const GameControls: React.FC<GameControlsProps> = ({
         <button
           type="button"
           onClick={onUndo}
-          disabled={!canUndo || isGameOver}
+          disabled={!canUndo}
           title={t.undoTooltip}
           className={`flex items-center gap-1 sm:gap-1.5 px-3 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer ${
-            !canUndo || isGameOver
+            !canUndo
               ? 'opacity-40 cursor-not-allowed bg-transparent border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#71717a]'
               : 'bg-white dark:bg-[#18181b] hover:bg-[#f2f2f2] dark:hover:bg-[#27272a] text-[#171717] dark:text-[#ededed] border-[#ebebeb] dark:border-[#27272a] hover:border-[#171717]/20 shadow-xs active:scale-95'
           }`}
@@ -59,10 +59,10 @@ export const GameControls: React.FC<GameControlsProps> = ({
         <button
           type="button"
           onClick={onRedo}
-          disabled={!canRedo || isGameOver}
+          disabled={!canRedo}
           title={t.redoTooltip}
           className={`flex items-center gap-1 sm:gap-1.5 px-3 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer ${
-            !canRedo || isGameOver
+            !canRedo
               ? 'opacity-40 cursor-not-allowed bg-transparent border-[#ebebeb] dark:border-[#27272a] text-[#8f8f8f] dark:text-[#71717a]'
               : 'bg-white dark:bg-[#18181b] hover:bg-[#f2f2f2] dark:hover:bg-[#27272a] text-[#171717] dark:text-[#ededed] border-[#ebebeb] dark:border-[#27272a] hover:border-[#171717]/20 shadow-xs active:scale-95'
           }`}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, Zap } from 'lucide-react';
+import { Chess } from 'chess.js';
 import type { GameTranslations } from './gameTranslations';
 
 export interface PositionEvaluationProps {
@@ -9,6 +10,7 @@ export interface PositionEvaluationProps {
   evalStr: string;
   isGameOver?: boolean;
   gameOverReason?: string | null;
+  winner?: 'w' | 'b' | 'draw' | null;
   isEvaluating?: boolean;
   depth?: number;
   isStartingPosition?: boolean;
@@ -38,8 +40,44 @@ export function calculateWdl(
   isGameOver?: boolean,
   gameOverReason?: string | null,
   isStartingPosition?: boolean,
-  fen?: string
+  fen?: string,
+  winner?: 'w' | 'b' | 'draw' | null
 ): WdlResult {
+  // 0. Check Terminal Position directly from FEN first (accurate to chess rules)
+  if (fen) {
+    try {
+      const c = new Chess(fen);
+      if (c.isCheckmate()) {
+        const turnToMove = c.turn(); // 'w' means white is checkmated (black wins); 'b' means black is checkmated (white wins)
+        const winningColor = turnToMove === 'w' ? 'b' : 'w';
+        return {
+          whiteChance: winningColor === 'w' ? 100 : 0,
+          drawChance: 0,
+          blackChance: winningColor === 'b' ? 100 : 0,
+          statusText: winningColor === 'w' ? t.whiteIsWinning : t.blackIsWinning,
+          statusType: winningColor === 'w' ? 'mate-white' : 'mate-black',
+          mateMoves: 0,
+          mateColor: winningColor,
+          numericCp: winningColor === 'w' ? 10000 : -10000,
+        };
+      }
+      if (c.isDraw() || c.isStalemate() || c.isThreefoldRepetition() || c.isInsufficientMaterial()) {
+        return {
+          whiteChance: 50,
+          drawChance: 0,
+          blackChance: 50,
+          statusText: t.gameIsEqual,
+          statusType: 'equal',
+          mateMoves: null,
+          mateColor: null,
+          numericCp: 0,
+        };
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const isStart =
     Boolean(isStartingPosition) ||
     Boolean(
@@ -103,28 +141,24 @@ export function calculateWdl(
 
   // Handle Game Over
   if (isGameOver) {
-    if (gameOverReason === 'checkmate') {
-      if (mateColor === 'b' || scoreNumeric < 0) {
-        return {
-          whiteChance: 0,
-          drawChance: 0,
-          blackChance: 100,
-          statusText: t.blackIsWinning,
-          statusType: 'mate-black',
-          mateMoves: 0,
-          mateColor: 'b',
-          numericCp: -10000,
-        };
-      }
+    if (gameOverReason === 'checkmate' || winner === 'w' || winner === 'b') {
+      const winningColor =
+        winner === 'w'
+          ? 'w'
+          : winner === 'b'
+          ? 'b'
+          : mateColor === 'b' || scoreNumeric < 0
+          ? 'b'
+          : 'w';
       return {
-        whiteChance: 100,
+        whiteChance: winningColor === 'w' ? 100 : 0,
         drawChance: 0,
-        blackChance: 0,
-        statusText: t.whiteIsWinning,
-        statusType: 'mate-white',
+        blackChance: winningColor === 'b' ? 100 : 0,
+        statusText: winningColor === 'w' ? t.whiteIsWinning : t.blackIsWinning,
+        statusType: winningColor === 'w' ? 'mate-white' : 'mate-black',
         mateMoves: 0,
-        mateColor: 'w',
-        numericCp: 10000,
+        mateColor: winningColor,
+        numericCp: winningColor === 'w' ? 10000 : -10000,
       };
     }
     // Any draw
@@ -245,6 +279,7 @@ export const PositionEvaluation: React.FC<PositionEvaluationProps> = ({
   evalStr,
   isGameOver = false,
   gameOverReason = null,
+  winner = null,
   isEvaluating = false,
   depth,
   isStartingPosition = false,
@@ -258,7 +293,8 @@ export const PositionEvaluation: React.FC<PositionEvaluationProps> = ({
     isGameOver,
     gameOverReason,
     isStartingPosition,
-    fen
+    fen,
+    winner
   );
 
   // Status badge styling
@@ -305,7 +341,7 @@ export const PositionEvaluation: React.FC<PositionEvaluationProps> = ({
         </div>
       </div>
 
-      {/* 2. Forced Checkmate Announcement Banner (if Mate in moves) */}
+      {/* 2. Forced Checkmate Announcement Banner (if Mate in moves or already checkmated) */}
       {wdl.mateColor && wdl.mateMoves !== null && (
         <div
           className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 shadow-xs ${
@@ -324,7 +360,15 @@ export const PositionEvaluation: React.FC<PositionEvaluationProps> = ({
             </div>
             <div className="text-xs leading-snug">
               <span className="font-bold">
-                {lang === 'ja'
+                {wdl.mateMoves === 0
+                  ? lang === 'ja'
+                    ? wdl.mateColor === 'w'
+                      ? 'チェックメイト！白の勝利です！'
+                      : 'チェックメイト！黒の勝利です！'
+                    : wdl.mateColor === 'w'
+                    ? 'Checkmate! White wins!'
+                    : 'Checkmate! Black wins!'
+                  : lang === 'ja'
                   ? wdl.mateColor === 'w'
                     ? `白が ${wdl.mateMoves} 手で強制チェックメイト（詰み）可能です！`
                     : `黒が ${wdl.mateMoves} 手で強制チェックメイト（詰み）可能です！`
@@ -339,7 +383,7 @@ export const PositionEvaluation: React.FC<PositionEvaluationProps> = ({
             </div>
           </div>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 uppercase font-bold shrink-0">
-            {t.mateForcedCheckmate}
+            {wdl.mateMoves === 0 ? (lang === 'ja' ? 'チェックメイト' : 'CHECKMATE') : t.mateForcedCheckmate}
           </span>
         </div>
       )}
